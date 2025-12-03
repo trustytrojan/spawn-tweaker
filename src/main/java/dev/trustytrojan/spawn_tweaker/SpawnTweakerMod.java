@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 @Mod(
     modid = "spawn_tweaker",
     name = "Spawn Tweaker",
-    version = "1.1"
+    version = "1.1.1"
 )
 public class SpawnTweakerMod
 {

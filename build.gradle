@@ -1,10 +1,13 @@
 buildscript {
     repositories {
         maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://plugins.gradle.org/m2/' }
         mavenCentral()
     }
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+        // Shadow plugin for bundling dependencies into the final jar
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.4'
     }
 }
 
@@ -12,8 +15,9 @@ apply plugin: 'net.minecraftforge.gradle'
 // Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
+apply plugin: 'com.github.johnrengelman.shadow'
 
-version = '1.1'
+version = '1.1.1'
 group = 'dev.trustytrojan.spawn_tweaker' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'spawn-tweaker'
 
@@ -62,7 +66,7 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
 
     // YAML parsing library
-    compile 'org.yaml:snakeyaml:1.33'
+    implementation 'org.yaml:snakeyaml:1.33'
 
     // You may put jars on which you depend on in ./libs or you may define them like so..
     // compile "some.group:artifact:version:classifier"
@@ -101,14 +105,39 @@ jar {
 
 // Example configuration to allow publishing using the maven-publish task
 // This is the preferred method to reobfuscate your jar file
-jar.finalizedBy('reobfJar')
+// Disable the default jar and instead produce a shaded jar to include dependencies
+jar.enabled = false
+// Ensure we reobfuscate the shaded jar
+shadowJar {
+    // Make the shadow jar the main artifact (no classifier)
+    classifier = null
+    // Relocate SnakeYAML to avoid conflicts with other mods
+    relocate 'org.yaml.snakeyaml', 'dev.trustytrojan.libs.snakeyaml'
+
+    // Only include the SnakeYAML artifact in the shaded jar. This prevents
+    // other runtime dependencies (e.g. build tooling or optional libs)
+    // from being bundled into the final JAR.
+    dependencies {
+        include(dependency('org.yaml:snakeyaml:1.33'))
+    }
+    // Avoid including signature files and Maven metadata
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    exclude 'META-INF/maven/**'
+    mergeServiceFiles()
+}
+shadowJar.finalizedBy('reobfJar')
+
+// Ensure the build uses the shadow jar so reobfJar acts on it
+tasks.build.dependsOn shadowJar
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
 //publish.dependsOn('reobfJar')
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact jar
+            // Publish the shaded jar (bundled with runtime dependencies).
+            // Use the shadowJar archive as the artifact and ensure it is built when publishing.
+            artifact shadowJar
         }
     }
     repositories {
