@@ -1,0 +1,15 @@
+- for:
+    entities:
+      - modid:entity
+      - modX:*
+    biomes:
+      - minecraft:plains
+      - biomesoplenty:*
+  spawn:
+    weight: 1
+    minGroupSize: 1
+    maxGroupSize: 1
+- for:
+    ...
+  spawn:
+    ...

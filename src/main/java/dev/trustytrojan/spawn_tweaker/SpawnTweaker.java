@@ -1,7 +1,13 @@
 package dev.trustytrojan.spawn_tweaker;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.regex.Pattern;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EnumCreatureType;
@@ -10,15 +16,6 @@ import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.registry.EntityEntry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Pattern;
 
 public class SpawnTweaker
 {
@@ -35,71 +32,132 @@ public class SpawnTweaker
         importMonsterSpawnData();
     }
 
+    /**
+     * Import monster spawn data from either YAML or JSON file.
+     * Tries YAML first (.yml), then falls back to JSON (.json).
+     */
     public static void importMonsterSpawnData()
     {
         logger.info("Importing monster spawn data...");
 
         File dataDir = new File("spawn_tweaker");
-        File inputFile = new File(dataDir, "monster_spawns.json");
+        File yamlFile = new File(dataDir, "monster_spawns.yml");
+        File jsonFile = new File(dataDir, "monster_spawns.json");
 
-        if (!inputFile.exists())
+        List<SpawnRule> rules = null;
+
+        // Try YAML first
+        if (yamlFile.exists())
         {
-            logger.warn("Monster spawn data file not found: {}", inputFile.getAbsolutePath());
+            rules = YamlHandler.readRules(yamlFile);
+        }
+        // Fall back to JSON
+        else if (jsonFile.exists())
+        {
+            rules = JsonHandler.readRules(jsonFile);
+        }
+        else
+        {
+            logger.warn("No monster spawn data file found (tried .yml and .json)");
             return;
         }
 
-        try (java.io.FileReader reader = new java.io.FileReader(inputFile))
+        if (rules == null || rules.isEmpty())
         {
-            Gson gson = new Gson();
-            java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<Map<String, EntitySpawnInfo>>(){}.getType();
-            Map<String, EntitySpawnInfo> monsterData = gson.fromJson(reader, type);
+            logger.warn("No valid spawn rules to import");
+            return;
+        }
 
-            for (Map.Entry<String, EntitySpawnInfo> entry : monsterData.entrySet())
+        applySpawnRules(rules);
+        logger.info("Monster spawn data imported successfully");
+    }
+
+    /**
+     * Apply a list of spawn rules to the game.
+     * 
+     * @param rules The spawn rules to apply
+     */
+    private static void applySpawnRules(List<SpawnRule> rules)
+    {
+        for (int ruleIdx = 0; ruleIdx < rules.size(); ruleIdx++)
+        {
+            SpawnRule rule = rules.get(ruleIdx);
+            
+            if (rule.forSelector.entities == null || rule.forSelector.entities.isEmpty())
             {
-                String entityKey = entry.getKey();
-                EntitySpawnInfo spawnInfo = entry.getValue();
-
-                if (spawnInfo == null)
-                {
-                    logger.error("{}: spawnInfo is null, skipping", entityKey);
-                    continue;
-                }
-
-                if (spawnInfo.biomes == null || spawnInfo.biomes.isEmpty())
-                {
-                    logger.error("{}: biomes is null or empty, skipping", entityKey);
-                    continue;
-                }
-
-                // Get the class of the entity
-                EntityEntry entityEntry = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(entityKey));
-                @SuppressWarnings("unchecked")
-                Class<? extends EntityLiving> entityClass = (Class<? extends EntityLiving>) entityEntry.getEntityClass();
-
-                // Remove old spawns
-                EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, ALL_BIOMES);
-
-                // Add new spawns
-                EntityRegistry.addSpawn(
-                    entityClass, spawnInfo.weight, spawnInfo.minGroupSize, spawnInfo.maxGroupSize,
-                    EnumCreatureType.MONSTER,
-                    spawnInfo.biomes.stream()
-                        .map(ResourceLocation::new)
-                        .map(Biome.REGISTRY::getObject)
-                        .toArray(Biome[]::new)
-                );
-
-                logger.info("Changed {} spawn to weight={} min={} max={} for {} biomes", entityKey, spawnInfo.weight, spawnInfo.minGroupSize, spawnInfo.maxGroupSize, spawnInfo.biomes.size());
+                logger.error("Rule #{}: missing or empty 'entities', skipping", ruleIdx + 1);
+                continue;
             }
 
-            logger.info("Monster spawn data imported successfully");
-        }
-        catch (IOException e)
-        {
-            logger.error("Failed to read monster spawn data", e);
+            if (rule.forSelector.biomes == null || rule.forSelector.biomes.isEmpty())
+            {
+                logger.error("Rule #{}: missing or empty 'biomes', skipping", ruleIdx + 1);
+                continue;
+            }
+
+            // Resolve target biomes from patterns
+            Biome[] targetBiomes = resolveBiomesFromGlobs(rule.forSelector.biomes);
+            if (targetBiomes.length == 0)
+            {
+                logger.warn("Rule #{}: no biomes matched from patterns {} — skipping", 
+                    ruleIdx + 1, rule.forSelector.biomes);
+                continue;
+            }
+
+            // Match entities and apply spawn settings
+            int totalMatched = 0;
+            for (String entityPattern : rule.forSelector.entities)
+            {
+                Pattern pattern = Pattern.compile(globToRegex(entityPattern));
+                int matchedCount = 0;
+
+                for (ResourceLocation rl : ForgeRegistries.ENTITIES.getKeys())
+                {
+                    String key = rl.toString();
+                    if (!pattern.matcher(key).matches())
+                        continue;
+
+                    EntityEntry entityEntry = ForgeRegistries.ENTITIES.getValue(rl);
+                    if (entityEntry == null)
+                        continue;
+
+                    @SuppressWarnings("unchecked")
+                    Class<? extends EntityLiving> entityClass = 
+                        (Class<? extends EntityLiving>) entityEntry.getEntityClass();
+
+                    // Remove old spawns for this entity across all biomes, then add for matched biomes
+                    EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, ALL_BIOMES);
+                    EntityRegistry.addSpawn(
+                        entityClass, rule.spawn.weight, rule.spawn.minGroupSize, rule.spawn.maxGroupSize,
+                        EnumCreatureType.MONSTER, targetBiomes
+                    );
+
+                    matchedCount++;
+                }
+
+                if (matchedCount == 0)
+                {
+                    logger.warn("Rule #{}: pattern \"{}\" matched zero entities", ruleIdx + 1, entityPattern);
+                }
+                else
+                {
+                    totalMatched += matchedCount;
+                }
+            }
+
+            if (totalMatched > 0)
+            {
+                logger.info("Rule #{} applied for {} entities in {} biomes",
+                    ruleIdx + 1, totalMatched, rule.forSelector.biomes.size());
+            }
         }
     }
 
+    /**
+     * Export monster spawn data to both YAML and JSON formats.
+     * 
+     * @param patterns Entity patterns to export (e.g., "modid:*", "*")
+     */
     public static void exportMonsterSpawnData(java.util.List<String> patterns)
     {
         logger.info("Exporting monster spawn data for patterns: {}", patterns);
@@ -116,16 +174,18 @@ public class SpawnTweaker
             }
         }
 
-        // Structure: "modid:entity" -> spawn data
-        Map<String, EntitySpawnInfo> monsterData = new HashMap<>();
+        // Convert spawn data to rules
+        List<SpawnRule> rules = new ArrayList<>();
+        java.util.Map<String, EntitySpawnInfo> entitySpawnMap = new java.util.LinkedHashMap<>();
 
         for (Biome biome : Biome.REGISTRY)
         {
             String biomeName = biome.getRegistryName().toString();
 
-            for (Biome.SpawnListEntry entry : biome.getSpawnableList(net.minecraft.entity.EnumCreatureType.MONSTER))
+            for (Biome.SpawnListEntry entry : biome.getSpawnableList(EnumCreatureType.MONSTER))
             {
-                EntityRegistry.EntityRegistration registration = EntityRegistry.instance().lookupModSpawn(entry.entityClass, true);
+                EntityRegistry.EntityRegistration registration = 
+                    EntityRegistry.instance().lookupModSpawn(entry.entityClass, true);
                 if (registration == null)
                     continue;
 
@@ -134,11 +194,11 @@ public class SpawnTweaker
                     continue;
 
                 // Get or create entity entry
-                EntitySpawnInfo spawnInfo = monsterData.get(entityKey);
+                EntitySpawnInfo spawnInfo = entitySpawnMap.get(entityKey);
                 if (spawnInfo == null)
                 {
                     spawnInfo = new EntitySpawnInfo(entry.itemWeight, entry.minGroupCount, entry.maxGroupCount);
-                    monsterData.put(entityKey, spawnInfo);
+                    entitySpawnMap.put(entityKey, spawnInfo);
                 }
 
                 // Add biome to the list
@@ -146,25 +206,31 @@ public class SpawnTweaker
             }
         }
 
-        // Write to JSON file
+        // Convert to SpawnRule format
+        for (java.util.Map.Entry<String, EntitySpawnInfo> entry : entitySpawnMap.entrySet())
+        {
+            List<String> entities = new ArrayList<>();
+            entities.add(entry.getKey());
+            
+            SpawnRule.ForSelector forSelector = new SpawnRule.ForSelector(entities, entry.getValue().biomes);
+            SpawnRule.SpawnConfig spawnConfig = new SpawnRule.SpawnConfig(
+                entry.getValue().weight,
+                entry.getValue().minGroupSize,
+                entry.getValue().maxGroupSize
+            );
+            
+            rules.add(new SpawnRule(forSelector, spawnConfig));
+        }
+
+        // Export to both formats
         File dataDir = new File("spawn_tweaker");
         if (!dataDir.exists())
         {
             dataDir.mkdirs();
         }
 
-        File outputFile = new File(dataDir, "monster_spawns.json");
-
-        try (FileWriter writer = new FileWriter(outputFile))
-        {
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            gson.toJson(monsterData, writer);
-            logger.info("Monster spawn data exported to {}", outputFile.getAbsolutePath());
-        }
-        catch (IOException e)
-        {
-            logger.error("Failed to write monster spawn data", e);
-        }
+        YamlHandler.writeRules(new File(dataDir, "monster_spawns_export.yml"), rules);
+        JsonHandler.writeRules(new File(dataDir, "monster_spawns_export.json"), rules);
     }
 
     // Backward-compatible overload: single modid or '*' handled as a single glob
@@ -202,6 +268,51 @@ public class SpawnTweaker
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * Resolve biome patterns (with wildcards) to actual Biome instances.
+     * 
+     * @param biomeKeys List of biome patterns (e.g., "minecraft:plains", "biomesoplenty:*")
+     * @return Array of matched biomes
+     */
+    private static Biome[] resolveBiomesFromGlobs(List<String> biomeKeys)
+    {
+        if (biomeKeys == null || biomeKeys.isEmpty())
+            return new Biome[0];
+
+        // Fast path: if "*" is present, match all biomes
+        if (biomeKeys.contains("*"))
+        {
+            return ALL_BIOMES;
+        }
+
+        // Build a set to avoid duplicates when multiple patterns overlap
+        LinkedHashSet<Biome> matched = new LinkedHashSet<>();
+
+        // Pre-compile patterns for efficiency
+        List<Pattern> patterns = new ArrayList<>();
+        for (String key : biomeKeys)
+        {
+            patterns.add(Pattern.compile(globToRegex(key)));
+        }
+
+        for (ResourceLocation rl : Biome.REGISTRY.getKeys())
+        {
+            String name = rl.toString();
+            for (Pattern p : patterns)
+            {
+                if (p.matcher(name).matches())
+                {
+                    Biome b = Biome.REGISTRY.getObject(rl);
+                    if (b != null)
+                        matched.add(b);
+                    break; // no need to test other patterns once matched
+                }
+            }
+        }
+
+        return matched.toArray(new Biome[matched.size()]);
     }
 
     // Helper class to store entity spawn information
