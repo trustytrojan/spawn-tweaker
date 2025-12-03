@@ -33,6 +33,8 @@ public class SpawnTweakerMod
     @EventHandler
     public void postInit(FMLPostInitializationEvent event)
     {
+        // We init here because at this point any mods that register
+        // entities/biomes during init phase 2 will be finished.
         SpawnTweaker.init();
     }
 }
