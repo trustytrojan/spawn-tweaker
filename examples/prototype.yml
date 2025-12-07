@@ -1,3 +1,6 @@
+# any text you see here starting with a '#' is a comment, it doesn't affect the configuration
+
+# 'on_join' lets you control conditions that permit entities joining the world
 on_join:
   min_health_chance:
     # key: minimum health required to apply this chance
@@ -5,7 +8,10 @@ on_join:
     21: 0.5
     40: 0.25
     80: 0.125
+
+# 'rules' contains spawn rule objects
 rules:
+  # in a YAML list, elements are separated by a '-' like a bullet-point list
   - for:
       entities:
         - modid:entity
@@ -17,7 +23,3 @@ rules:
       weight: 1
       minGroupSize: 1
       maxGroupSize: 1
-  - for:
-      ...
-    spawn:
-      ...

@@ -5,7 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 
 public final class GlobUtils
@@ -35,7 +34,7 @@ public final class GlobUtils
     public static boolean matchesAnyCompiled(final String key, final java.util.List<Pattern> patterns)
     {
         if (patterns == null || patterns.isEmpty()) return false;
-        for (Pattern pat : patterns)
+        for (final var pat : patterns)
         {
             if (pat.matcher(key).matches()) return true;
         }
@@ -51,21 +50,21 @@ public final class GlobUtils
         {
             final var all = new Biome[Biome.REGISTRY.getKeys().size()];
             var i = 0;
-            for (Biome b : Biome.REGISTRY) all[i++] = b;
+            for (final var b : Biome.REGISTRY) all[i++] = b;
             return all;
         }
 
         final var matched = new LinkedHashSet<>();
         final var patterns = new ArrayList<Pattern>();
-        for (String key : biomeKeys)
+        for (final var key : biomeKeys)
         {
             patterns.add(Pattern.compile(globToRegex(key)));
         }
 
-        for (ResourceLocation rl : Biome.REGISTRY.getKeys())
+        for (final var rl : Biome.REGISTRY.getKeys())
         {
             final var name = rl.toString();
-            for (Pattern p : patterns)
+            for (final var p : patterns)
             {
                 if (p.matcher(name).matches())
                 {

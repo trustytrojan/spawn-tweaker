@@ -2,6 +2,7 @@ package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -26,7 +27,7 @@ public class SpawnTweaker
     {
         ALL_BIOMES = new Biome[Biome.REGISTRY.getKeys().size()];
         var i = 0;
-        for (Biome b : Biome.REGISTRY)
+        for (final var b : Biome.REGISTRY)
             ALL_BIOMES[i++] = b;
 
         importMonsterSpawnData();
@@ -112,12 +113,12 @@ public class SpawnTweaker
             // Match entities and apply spawn settings
             var totalMatched = 0;
             final var affectedBiomes = new java.util.LinkedHashSet<>();
-            for (String entityPattern : rule.forSelector.entities)
+            for (final var entityPattern : rule.forSelector.entities)
             {
                 var pattern = Pattern.compile(GlobUtils.globToRegex(entityPattern));
                 var matchedCount = 0;
 
-                for (ResourceLocation rl : ForgeRegistries.ENTITIES.getKeys())
+                for (final var rl : ForgeRegistries.ENTITIES.getKeys())
                 {
                     final var key = rl.toString();
                     if (!pattern.matcher(key).matches())
@@ -139,7 +140,8 @@ public class SpawnTweaker
                     }
 
                     applySpawnForEntity(entityClass, rule.spawn, targetBiomesForEntity);
-                    for (Biome b : targetBiomesForEntity) affectedBiomes.add(b);
+                    for (final var b : targetBiomesForEntity)
+                        affectedBiomes.add(b);
 
                     matchedCount++;
                 }
@@ -154,7 +156,7 @@ public class SpawnTweaker
                 }
             }
 
-                if (totalMatched > 0)
+            if (totalMatched > 0)
             {
                 logger.info("Rule #{} applied for {} entities in {} biomes",
                     ruleIdx + 1, totalMatched, affectedBiomes.size());
@@ -162,14 +164,19 @@ public class SpawnTweaker
         }
     }
 
-    private static Biome[] getTargetBiomesForEntity(final SpawnRule rule, final  Class<? extends EntityLiving> entityClass, final  ResourceLocation rl, final  int ruleIdx, final  String entityKey)
+    private static Biome[] getTargetBiomesForEntity(
+        final SpawnRule rule,
+        final Class<? extends EntityLiving> entityClass,
+        final ResourceLocation rl,
+        final int ruleIdx,
+        final String entityKey)
     {
         if (rule.forSelector.biomes == null || rule.forSelector.biomes.isEmpty())
         {
             final var biomesForEntity = new java.util.ArrayList<>();
-            for (Biome b : Biome.REGISTRY)
+            for (final var b : Biome.REGISTRY)
             {
-                for (Biome.SpawnListEntry entry : b.getSpawnableList(EnumCreatureType.MONSTER))
+                for (final var entry : b.getSpawnableList(EnumCreatureType.MONSTER))
                 {
                     if (entry.entityClass.equals(entityClass))
                     {
@@ -195,7 +202,10 @@ public class SpawnTweaker
         return targetBiomesGlob;
     }
 
-    private static void applySpawnForEntity(final Class<? extends EntityLiving> entityClass, final  SpawnRule.SpawnConfig spawn, final  Biome[] targetBiomesForEntity)
+    private static void applySpawnForEntity(
+        final Class<? extends EntityLiving> entityClass,
+        final SpawnRule.SpawnConfig spawn,
+        final Biome[] targetBiomesForEntity)
     {
         EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, ALL_BIOMES);
         EntityRegistry.addSpawn(entityClass, spawn.weight, spawn.minGroupSize, spawn.maxGroupSize,
@@ -207,7 +217,7 @@ public class SpawnTweaker
      * 
      * @param patterns Entity patterns to export (e.g., "modid:*", "*")
      */
-    public static void exportMonsterSpawnData(final java.util.List<String> patterns)
+    public static void exportMonsterSpawnData(final List<String> patterns)
     {
         logger.info("Exporting monster spawn data for patterns: {}", patterns);
 
@@ -216,7 +226,7 @@ public class SpawnTweaker
         final var compiled = new ArrayList<Pattern>();
         if (patterns != null)
         {
-            for (String p : patterns)
+            for (final var p : patterns)
             {
                 if ("*".equals(p)) { matchAll = true; break; }
                 compiled.add(Pattern.compile(GlobUtils.globToRegex(p)));
@@ -225,13 +235,13 @@ public class SpawnTweaker
 
         // Convert spawn data to rules
         final var rules = new ArrayList<SpawnRule>();
-        java.util.Map<String, EntitySpawnInfo> entitySpawnMap = new java.util.LinkedHashMap<>();
+        final var entitySpawnMap = new LinkedHashMap<String, EntitySpawnInfo>();
 
-        for (Biome biome : Biome.REGISTRY)
+        for (final var biome : Biome.REGISTRY)
         {
             var biomeName = biome.getRegistryName().toString();
 
-            for (Biome.SpawnListEntry entry : biome.getSpawnableList(EnumCreatureType.MONSTER))
+            for (final var entry : biome.getSpawnableList(EnumCreatureType.MONSTER))
             {
                 final var registration = 
                     EntityRegistry.instance().lookupModSpawn(entry.entityClass, true);
@@ -256,7 +266,7 @@ public class SpawnTweaker
         }
 
         // Convert to SpawnRule format
-        for (java.util.Map.Entry<String, EntitySpawnInfo> entry : entitySpawnMap.entrySet())
+        for (final var entry : entitySpawnMap.entrySet())
         {
             final var entities = new ArrayList<String>();
             entities.add(entry.getKey());
@@ -284,7 +294,7 @@ public class SpawnTweaker
     // Backward-compatible overload: single modid or '*' handled as a single glob
     public static void exportMonsterSpawnData(final String modid)
     {
-        java.util.List<String> patterns = java.util.Collections.singletonList(modid);
+        final var patterns = java.util.Collections.singletonList(modid);
         exportMonsterSpawnData(patterns);
     }
 
@@ -296,7 +306,7 @@ public class SpawnTweaker
         int maxGroupSize;
         List<String> biomes;
 
-        EntitySpawnInfo(final int weight, final  int minGroupSize, final  int maxGroupSize)
+        EntitySpawnInfo(final int weight, final int minGroupSize, final int maxGroupSize)
         {
             this.weight = weight;
             this.minGroupSize = minGroupSize;

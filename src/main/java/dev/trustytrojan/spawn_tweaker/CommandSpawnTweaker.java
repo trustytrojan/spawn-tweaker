@@ -6,7 +6,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.World;
 
 public class CommandSpawnTweaker extends CommandBase {
     @Override
@@ -40,8 +39,8 @@ public class CommandSpawnTweaker extends CommandBase {
                 sender.sendMessage(new TextComponentString("Monster spawn data exported for patterns: " + String.join(", ", patterns)));
                 break;
             case "killall":
-                for (World world : server.worlds) {
-                    for (Object e : world.loadedEntityList.toArray()) {
+                for (final var world : server.worlds) {
+                    for (final var e : world.loadedEntityList.toArray()) {
                         if (e instanceof IMob)
                             world.removeEntityDangerously((Entity) e);
                     }

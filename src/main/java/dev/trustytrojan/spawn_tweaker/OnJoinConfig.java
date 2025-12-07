@@ -1,5 +1,8 @@
 package dev.trustytrojan.spawn_tweaker;
 
+import java.util.Map;
+import java.util.Random;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,18 +13,20 @@ public class OnJoinConfig
 {
     private static final Logger logger = LogManager.getLogger();
 
-    public final java.util.Map<Integer, Double> minHealthChance;
+    public final Map<Integer, Double> minHealthChance;
 
-    public OnJoinConfig(final java.util.Map<Integer, Double> minHealthChance)
+    public OnJoinConfig(final Map<Integer, Double> minHealthChance)
     {
-        this.minHealthChance = (minHealthChance != null ? new java.util.LinkedHashMap<>(minHealthChance) : new java.util.LinkedHashMap<>());
+        this.minHealthChance = (minHealthChance != null)
+            ? new java.util.LinkedHashMap<>(minHealthChance)
+            : new java.util.LinkedHashMap<>();
     }
 
     public Double getChanceForHealth(final int health)
     {
         var chosenThreshold = Integer.MIN_VALUE;
         Double chosenChance = null;
-        for (java.util.Map.Entry<Integer, Double> e : minHealthChance.entrySet())
+        for (final var e : minHealthChance.entrySet())
         {
             final var thr = e.getKey();
             if (health >= thr && thr > chosenThreshold)
@@ -33,7 +38,7 @@ public class OnJoinConfig
         return chosenChance;
     }
 
-    public boolean shouldAllowOnJoin(final EntityLiving el, final  java.util.Random rand)
+    public boolean shouldAllowOnJoin(final EntityLiving el, final Random rand)
     {
         // Check chunk-generation exemption
         try

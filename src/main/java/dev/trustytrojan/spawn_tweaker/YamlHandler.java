@@ -28,6 +28,7 @@ public class YamlHandler
      * @param file The YAML file to read from
      * @return List of spawn rules, or null if file doesn't exist or an error occurs
      */
+    @SuppressWarnings("unchecked")
     public static List<SpawnRule> readRules(final File file)
     {
         if (!file.exists())
@@ -49,12 +50,10 @@ public class YamlHandler
             // Parse 'on_join' if present
             if (loaded instanceof Map)
             {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> root = (Map<String, Object>) loaded;
+                final var root = (Map<String, Object>) loaded;
                 try
                 {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> onJoinRaw = (Map<String, Object>) root.get("on_join");
+                    final var onJoinRaw = (Map<String, Object>) root.get("on_join");
                     if (onJoinRaw != null)
                     {
                         logger.debug("Parsing on_join section from YAML");
@@ -73,14 +72,13 @@ public class YamlHandler
                 }
 
                 // Parse the 'rules' list
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> rawRules = (List<Map<String, Object>>) root.get("rules");
+                final var rawRules = (List<Map<String, Object>>) root.get("rules");
                 final var rules = new ArrayList<SpawnRule>();
                 if (rawRules != null)
                 {
                     for (var i = 0; i < rawRules.size(); i++)
                     {
-                        Map<String, Object> rawRule = rawRules.get(i);
+                        final var rawRule = rawRules.get(i);
                         final var rule = parseRule(rawRule, i + 1);
                         if (rule != null)
                         {
@@ -96,8 +94,7 @@ public class YamlHandler
             // Fallback to legacy format (plain list of rules at root)
             if (loaded instanceof List)
             {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> rawRules = (List<Map<String, Object>>) loaded;
+                final var rawRules = (List<Map<String, Object>>) loaded;
                 if (rawRules == null || rawRules.isEmpty())
                 {
                     logger.warn("No spawn rules found in YAML file");
@@ -107,7 +104,7 @@ public class YamlHandler
                 final var rules = new ArrayList<SpawnRule>();
                 for (var i = 0; i < rawRules.size(); i++)
                 {
-                    Map<String, Object> rawRule = rawRules.get(i);
+                    final var rawRule = rawRules.get(i);
                     final var rule = parseRule(rawRule, i + 1);
                     if (rule != null)
                     {
@@ -136,18 +133,16 @@ public class YamlHandler
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static void parseOnJoin(final Map<String, Object> onJoinRaw)
     {
         try
         {
-            // bossChance is removed: we only support min_health_chance thresholds now
-
-            java.util.Map<Integer, Double> minHealthChance = new java.util.LinkedHashMap<>();
-            @SuppressWarnings("unchecked")
-            Map<Object, Object> rawMin = (Map<Object, Object>) onJoinRaw.get("min_health_chance");
+            final var minHealthChance = new LinkedHashMap<Integer, Double>();
+            final var rawMin = (Map<Object, Object>) onJoinRaw.get("min_health_chance");
             if (rawMin != null)
             {
-                for (java.util.Map.Entry<Object, Object> e : rawMin.entrySet())
+                for (final var e : rawMin.entrySet())
                 {
                     try
                     {
@@ -169,7 +164,7 @@ public class YamlHandler
             logger.info("Loaded on_join config: min_health_chance entries={}", minHealthChance.size());
 
             // Log each threshold for visibility
-            for (java.util.Map.Entry<Integer, Double> e : minHealthChance.entrySet())
+            for (final var e : minHealthChance.entrySet())
             {
                 logger.debug("on_join: min_health_chance threshold {} -> {}", e.getKey(), e.getValue());
             }
@@ -199,26 +194,27 @@ public class YamlHandler
         try (final var writer = new FileWriter(file))
         {
             // Build entity-centric export list: one top-level list item per entity
-            List<Map<String, Object>> entityList = new ArrayList<>();
+            final var entityList = new ArrayList<>();
 
-            for (SpawnRule rule : rules)
+            for (final var rule : rules)
             {
                 if (rule == null || rule.forSelector == null || rule.spawn == null) continue;
                 final var entities = rule.forSelector.entities;
                 final var biomes = rule.forSelector.biomes;
-                for (String entityKey : entities)
+
+                for (final var entityKey : entities)
                 {
-                    Map<String, Object> ent = new LinkedHashMap<>();
+                    final var ent = new LinkedHashMap<>();
                     ent.put("entity", entityKey);
                     ent.put("weight", rule.spawn.weight);
                     ent.put("minGroupSize", rule.spawn.minGroupSize);
                     ent.put("maxGroupSize", rule.spawn.maxGroupSize);
 
                     // Group biomes by resource domain
-                    Map<String, List<String>> domainMap = new LinkedHashMap<>();
+                    final var domainMap = new LinkedHashMap<String, List<String>>();
                     if (biomes != null)
                     {
-                        for (String biome : biomes)
+                        for (final var biome : biomes)
                         {
                             var domain = "minecraft";
                             var name = biome;
@@ -228,7 +224,7 @@ public class YamlHandler
                                 domain = biome.substring(0, idx);
                                 name = biome.substring(idx + 1);
                             }
-                            domainMap.computeIfAbsent(domain, k -> new ArrayList<>()).add(name);
+                            domainMap.computeIfAbsent(domain, k -> new ArrayList<String>()).add(name);
                         }
                     }
                     ent.put("biomes", domainMap);
@@ -252,21 +248,19 @@ public class YamlHandler
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static SpawnRule parseRule(final Map<String, Object> rawRule, final  int ruleIndex)
     {
         try
         {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> forSection = (Map<String, Object>) rawRule.get("for");
+            final var forSection = (Map<String, Object>) rawRule.get("for");
             if (forSection == null)
             {
                 logger.error("Rule #{}: missing 'for' section, skipping", ruleIndex);
                 return null;
             }
 
-            @SuppressWarnings("unchecked")
             final var entities = (List<String>) forSection.get("entities");
-                @SuppressWarnings("unchecked")
                 var biomes = (List<String>) forSection.get("biomes");
                 if (entities == null || entities.isEmpty())
                 {
@@ -280,8 +274,7 @@ public class YamlHandler
                     biomes = null;
                 }
 
-            @SuppressWarnings("unchecked")
-            Map<String, Object> spawnSection = (Map<String, Object>) rawRule.get("spawn");
+            final var spawnSection = (Map<String, Object>) rawRule.get("spawn");
             if (spawnSection == null)
             {
                 logger.error("Rule #{}: missing 'spawn' section, skipping", ruleIndex);
