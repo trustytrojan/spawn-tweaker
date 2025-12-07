@@ -68,6 +68,9 @@ dependencies {
     // YAML parsing library
     implementation 'org.yaml:snakeyaml:1.33'
 
+    // Test dependencies
+    testImplementation 'junit:junit:4.13.2'
+
     // You may put jars on which you depend on in ./libs or you may define them like so..
     // compile "some.group:artifact:version:classifier"
     // compile "some.group:artifact:version"

@@ -2,8 +2,11 @@ package dev.trustytrojan.spawn_tweaker;
 
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
 
 public class CommandSpawnTweaker extends CommandBase {
     @Override
@@ -35,6 +38,15 @@ public class CommandSpawnTweaker extends CommandBase {
                 java.util.List<String> patterns = java.util.Arrays.asList(java.util.Arrays.copyOfRange(args, 1, args.length));
                 SpawnTweaker.exportMonsterSpawnData(patterns);
                 sender.sendMessage(new TextComponentString("Monster spawn data exported for patterns: " + String.join(", ", patterns)));
+                break;
+            case "killall":
+                for (World world : server.worlds) {
+                    for (Object e : world.loadedEntityList.toArray()) {
+                        if (e instanceof IMob)
+                            world.removeEntityDangerously((Entity) e);
+                    }
+                }
+                sender.sendMessage(new TextComponentString("All monsters removed."));
                 break;
             default:
                 sender.sendMessage(new TextComponentString("Unknown subcommand: " + args[0]));

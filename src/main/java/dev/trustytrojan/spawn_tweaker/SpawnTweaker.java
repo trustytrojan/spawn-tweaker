@@ -2,7 +2,6 @@ package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -21,6 +20,8 @@ public class SpawnTweaker
 {
     private static final Logger logger = LogManager.getLogger();
     private static Biome[] ALL_BIOMES;
+    // Configuration applied on entity join events
+    private static volatile OnJoinConfig onJoinConfig = null;
 
     public static void init()
     {
@@ -33,8 +34,7 @@ public class SpawnTweaker
     }
 
     /**
-     * Import monster spawn data from either YAML or JSON file.
-     * Tries YAML first (.yml), then falls back to JSON (.json).
+     * Import monster spawn data from YAML file (`monster_spawns.yml`).
      */
     public static void importMonsterSpawnData()
     {
@@ -42,7 +42,7 @@ public class SpawnTweaker
 
         File dataDir = new File("spawn_tweaker");
         File yamlFile = new File(dataDir, "monster_spawns.yml");
-        File jsonFile = new File(dataDir, "monster_spawns.json");
+        // JSON support removed; only YAML is used
 
         List<SpawnRule> rules = null;
 
@@ -51,14 +51,10 @@ public class SpawnTweaker
         {
             rules = YamlHandler.readRules(yamlFile);
         }
-        // Fall back to JSON
-        else if (jsonFile.exists())
-        {
-            rules = JsonHandler.readRules(jsonFile);
-        }
+        // (JSON support removed - prefer YAML)
         else
         {
-            logger.warn("No monster spawn data file found (tried .yml and .json)");
+            logger.warn("No monster spawn data file found (tried .yml)");
             return;
         }
 
@@ -70,6 +66,28 @@ public class SpawnTweaker
 
         applySpawnRules(rules);
         logger.info("Monster spawn data imported successfully");
+    }
+
+    // on_join config is now provided by `OnJoinConfig` (top-level class)
+
+    public static void setOnJoinConfig(OnJoinConfig cfg)
+    {
+        onJoinConfig = cfg;
+    }
+
+    public static OnJoinConfig getOnJoinConfig()
+    {
+        return onJoinConfig;
+    }
+
+    /**
+     * Evaluate whether an entity's spawn should be allowed at join, per configured settings.
+     */
+    public static boolean shouldAllowOnJoin(net.minecraft.entity.EntityLiving el, java.util.Random rand)
+    {
+        OnJoinConfig cfg = onJoinConfig;
+        if (cfg == null) return true; // no config => allow
+        return cfg.shouldAllowOnJoin(el, rand);
     }
 
     /**
@@ -89,26 +107,15 @@ public class SpawnTweaker
                 continue;
             }
 
-            if (rule.forSelector.biomes == null || rule.forSelector.biomes.isEmpty())
-            {
-                logger.error("Rule #{}: missing or empty 'biomes', skipping", ruleIdx + 1);
-                continue;
-            }
-
-            // Resolve target biomes from patterns
-            Biome[] targetBiomes = resolveBiomesFromGlobs(rule.forSelector.biomes);
-            if (targetBiomes.length == 0)
-            {
-                logger.warn("Rule #{}: no biomes matched from patterns {} — skipping", 
-                    ruleIdx + 1, rule.forSelector.biomes);
-                continue;
-            }
+            // Note: 'biomes' on a rule is optional. If absent, we will use the
+            // set of biomes where each matched entity is currently listed to spawn.
 
             // Match entities and apply spawn settings
             int totalMatched = 0;
+            java.util.LinkedHashSet<Biome> affectedBiomes = new java.util.LinkedHashSet<>();
             for (String entityPattern : rule.forSelector.entities)
             {
-                Pattern pattern = Pattern.compile(globToRegex(entityPattern));
+                Pattern pattern = Pattern.compile(GlobUtils.globToRegex(entityPattern));
                 int matchedCount = 0;
 
                 for (ResourceLocation rl : ForgeRegistries.ENTITIES.getKeys())
@@ -125,12 +132,15 @@ public class SpawnTweaker
                     Class<? extends EntityLiving> entityClass = 
                         (Class<? extends EntityLiving>) entityEntry.getEntityClass();
 
-                    // Remove old spawns for this entity across all biomes, then add for matched biomes
-                    EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, ALL_BIOMES);
-                    EntityRegistry.addSpawn(
-                        entityClass, rule.spawn.weight, rule.spawn.minGroupSize, rule.spawn.maxGroupSize,
-                        EnumCreatureType.MONSTER, targetBiomes
-                    );
+                    Biome[] targetBiomesForEntity = getTargetBiomesForEntity(rule, entityClass, rl, ruleIdx, key);
+                    if (targetBiomesForEntity == null || targetBiomesForEntity.length == 0)
+                    {
+                        // getTargetBiomesForEntity logs warning when needed
+                        continue;
+                    }
+
+                    applySpawnForEntity(entityClass, rule.spawn, targetBiomesForEntity);
+                    for (Biome b : targetBiomesForEntity) affectedBiomes.add(b);
 
                     matchedCount++;
                 }
@@ -145,16 +155,56 @@ public class SpawnTweaker
                 }
             }
 
-            if (totalMatched > 0)
+                if (totalMatched > 0)
             {
                 logger.info("Rule #{} applied for {} entities in {} biomes",
-                    ruleIdx + 1, totalMatched, rule.forSelector.biomes.size());
+                    ruleIdx + 1, totalMatched, affectedBiomes.size());
             }
         }
     }
 
+    private static Biome[] getTargetBiomesForEntity(SpawnRule rule, Class<? extends EntityLiving> entityClass, ResourceLocation rl, int ruleIdx, String entityKey)
+    {
+        if (rule.forSelector.biomes == null || rule.forSelector.biomes.isEmpty())
+        {
+            java.util.List<Biome> biomesForEntity = new java.util.ArrayList<>();
+            for (Biome b : Biome.REGISTRY)
+            {
+                for (Biome.SpawnListEntry entry : b.getSpawnableList(EnumCreatureType.MONSTER))
+                {
+                    if (entry.entityClass.equals(entityClass))
+                    {
+                        biomesForEntity.add(b);
+                        break;
+                    }
+                }
+            }
+            if (biomesForEntity.isEmpty())
+            {
+                logger.warn("Rule #{}: entity {} currently registered in zero biomes, skipping", ruleIdx + 1, entityKey);
+                return new Biome[0];
+            }
+            return biomesForEntity.toArray(new Biome[biomesForEntity.size()]);
+        }
+
+        Biome[] targetBiomesGlob = GlobUtils.resolveBiomesFromGlobs(rule.forSelector.biomes);
+        if (targetBiomesGlob.length == 0)
+        {
+            logger.warn("Rule #{}: no biomes matched from patterns {} — skipping", ruleIdx + 1, rule.forSelector.biomes);
+            return new Biome[0];
+        }
+        return targetBiomesGlob;
+    }
+
+    private static void applySpawnForEntity(Class<? extends EntityLiving> entityClass, SpawnRule.SpawnConfig spawn, Biome[] targetBiomesForEntity)
+    {
+        EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, ALL_BIOMES);
+        EntityRegistry.addSpawn(entityClass, spawn.weight, spawn.minGroupSize, spawn.maxGroupSize,
+            EnumCreatureType.MONSTER, targetBiomesForEntity);
+    }
+
     /**
-     * Export monster spawn data to both YAML and JSON formats.
+     * Export monster spawn data to YAML format.
      * 
      * @param patterns Entity patterns to export (e.g., "modid:*", "*")
      */
@@ -170,7 +220,7 @@ public class SpawnTweaker
             for (String p : patterns)
             {
                 if ("*".equals(p)) { matchAll = true; break; }
-                compiled.add(Pattern.compile(globToRegex(p)));
+                compiled.add(Pattern.compile(GlobUtils.globToRegex(p)));
             }
         }
 
@@ -190,7 +240,7 @@ public class SpawnTweaker
                     continue;
 
                 String entityKey = registration.getRegistryName().toString();
-                if (!(matchAll || matchesAnyCompiled(entityKey, compiled)))
+                if (!(matchAll || GlobUtils.matchesAnyCompiled(entityKey, compiled)))
                     continue;
 
                 // Get or create entity entry
@@ -230,7 +280,6 @@ public class SpawnTweaker
         }
 
         YamlHandler.writeRules(new File(dataDir, "monster_spawns_export.yml"), rules);
-        JsonHandler.writeRules(new File(dataDir, "monster_spawns_export.json"), rules);
     }
 
     // Backward-compatible overload: single modid or '*' handled as a single glob
@@ -240,35 +289,9 @@ public class SpawnTweaker
         exportMonsterSpawnData(patterns);
     }
 
-    private static boolean matchesAnyCompiled(String key, java.util.List<Pattern> patterns)
-    {
-        if (patterns == null || patterns.isEmpty()) return false;
-        for (Pattern pat : patterns)
-        {
-            if (pat.matcher(key).matches()) return true;
-        }
-        return false;
-    }
+    // matchesAnyCompiled moved to GlobUtils
 
-    private static String globToRegex(String glob)
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < glob.length(); i++)
-        {
-            char c = glob.charAt(i);
-            switch (c)
-            {
-                case '*': sb.append(".*"); break;
-                case '?': sb.append('.'); break;
-                case '.': sb.append("\\."); break;
-                case '\\': sb.append("\\\\"); break;
-                case '+': case '(': case ')': case '|': case '^': case '$': case '[': case ']': case '{': case '}':
-                    sb.append('\\').append(c); break;
-                default: sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
+    // globToRegex moved to GlobUtils
 
     /**
      * Resolve biome patterns (with wildcards) to actual Biome instances.
@@ -276,44 +299,7 @@ public class SpawnTweaker
      * @param biomeKeys List of biome patterns (e.g., "minecraft:plains", "biomesoplenty:*")
      * @return Array of matched biomes
      */
-    private static Biome[] resolveBiomesFromGlobs(List<String> biomeKeys)
-    {
-        if (biomeKeys == null || biomeKeys.isEmpty())
-            return new Biome[0];
-
-        // Fast path: if "*" is present, match all biomes
-        if (biomeKeys.contains("*"))
-        {
-            return ALL_BIOMES;
-        }
-
-        // Build a set to avoid duplicates when multiple patterns overlap
-        LinkedHashSet<Biome> matched = new LinkedHashSet<>();
-
-        // Pre-compile patterns for efficiency
-        List<Pattern> patterns = new ArrayList<>();
-        for (String key : biomeKeys)
-        {
-            patterns.add(Pattern.compile(globToRegex(key)));
-        }
-
-        for (ResourceLocation rl : Biome.REGISTRY.getKeys())
-        {
-            String name = rl.toString();
-            for (Pattern p : patterns)
-            {
-                if (p.matcher(name).matches())
-                {
-                    Biome b = Biome.REGISTRY.getObject(rl);
-                    if (b != null)
-                        matched.add(b);
-                    break; // no need to test other patterns once matched
-                }
-            }
-        }
-
-        return matched.toArray(new Biome[matched.size()]);
-    }
+    // resolveBiomesFromGlobs moved to GlobUtils
 
     // Helper class to store entity spawn information
     private static class EntitySpawnInfo
