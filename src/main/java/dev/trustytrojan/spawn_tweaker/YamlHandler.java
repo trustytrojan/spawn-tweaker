@@ -304,36 +304,12 @@ public class YamlHandler
         }
     }
 
-    private static Map<String, Object> serializeRule(SpawnRule rule)
-    {
-        Map<String, Object> result = new LinkedHashMap<>();
-        
-        // Create 'for' section
-        Map<String, Object> forSection = new LinkedHashMap<>();
-        forSection.put("entities", rule.forSelector.entities);
-        if (rule.forSelector.biomes != null && !rule.forSelector.biomes.isEmpty())
-        {
-            forSection.put("biomes", rule.forSelector.biomes);
-        }
-        
-        // Create 'spawn' section
-        Map<String, Object> spawnSection = new LinkedHashMap<>();
-        spawnSection.put("weight", rule.spawn.weight);
-        spawnSection.put("minGroupSize", rule.spawn.minGroupSize);
-        spawnSection.put("maxGroupSize", rule.spawn.maxGroupSize);
-        
-        result.put("for", forSection);
-        result.put("spawn", spawnSection);
-        
-        return result;
-    }
-
     private static int getIntValue(Map<String, Object> map, String key, int defaultValue)
     {
-        Object value = map.get(key);
-        if (value instanceof Number)
+        final var value = map.get(key);
+        if (value instanceof final Number n)
         {
-            return ((Number) value).intValue();
+            return n.intValue();
         }
         return defaultValue;
     }

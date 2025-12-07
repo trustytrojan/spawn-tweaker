@@ -42,7 +42,7 @@ public class OnJoinConfig
             if (el.world != null)
             {
                 BlockPos pos = new BlockPos(el);
-                Chunk chunk = el.world.getChunkFromBlockCoords(pos);
+                Chunk chunk = el.world.getChunk(pos);
                 if (chunk != null && !chunk.isTerrainPopulated())
                 {
                     logger.info("on_join: entity {} allowed due to chunk generation (chunk not populated yet)", el.getName());

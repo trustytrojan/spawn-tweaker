@@ -25,7 +25,7 @@ public class ForgeEventHandler
 
         // Do not touch behavior of vanilla mobs (namespace 'minecraft') — only affect modded monsters
         ResourceLocation rl = EntityList.getKey(el);
-        if (rl != null && "minecraft".equals(rl.getResourceDomain()))
+        if (rl != null && "minecraft".equals(rl.getNamespace()))
         {
             logger.debug("on_join: skipping vanilla entity {} ({})", el.getName(), rl);
             return;

@@ -321,11 +321,11 @@ tasks.register('cleanroomAfterSync') {
     dependsOn 'injectTags', 'generateMixinJson'
 }
 
-if (propertyBool('use_modern_java_syntax')) {
-    tasks.withType(Javadoc).configureEach {
-        sourceCompatibility = 17
-    }
-}
+// if (propertyBool('use_modern_java_syntax')) {
+//     tasks.withType(Javadoc).configureEach {
+//         sourceCompatibility = 17
+//     }
+// }
 
 tasks.named('injectTags', InjectTagsTask).configure {
     onlyIf {
