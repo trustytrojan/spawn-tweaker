@@ -20,20 +20,20 @@ public class SpawnTweakerMod
     private static Logger logger;
 
     @EventHandler
-    public void preInit(FMLPreInitializationEvent event)
+    public void preInit(final FMLPreInitializationEvent event)
     {
         logger = event.getModLog();
     }
 
     @EventHandler
-    public void serverStarting(FMLServerStartingEvent event)
+    public void serverStarting(final FMLServerStartingEvent event)
     {
         event.registerServerCommand(new CommandSpawnTweaker());
         logger.info("Registered /spawntweaker command");
     }
 
     @EventHandler
-    public void postInit(FMLPostInitializationEvent event)
+    public void postInit(final FMLPostInitializationEvent event)
     {
         // We init here because at this point any mods that register
         // entities/biomes during init phase 2 will be finished.

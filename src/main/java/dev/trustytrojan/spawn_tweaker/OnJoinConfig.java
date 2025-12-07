@@ -5,7 +5,6 @@ import org.apache.logging.log4j.Logger;
 
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.chunk.Chunk;
 
 public class OnJoinConfig
 {
@@ -13,18 +12,18 @@ public class OnJoinConfig
 
     public final java.util.Map<Integer, Double> minHealthChance;
 
-    public OnJoinConfig(java.util.Map<Integer, Double> minHealthChance)
+    public OnJoinConfig(final java.util.Map<Integer, Double> minHealthChance)
     {
         this.minHealthChance = (minHealthChance != null ? new java.util.LinkedHashMap<>(minHealthChance) : new java.util.LinkedHashMap<>());
     }
 
-    public Double getChanceForHealth(int health)
+    public Double getChanceForHealth(final int health)
     {
-        int chosenThreshold = Integer.MIN_VALUE;
+        var chosenThreshold = Integer.MIN_VALUE;
         Double chosenChance = null;
         for (java.util.Map.Entry<Integer, Double> e : minHealthChance.entrySet())
         {
-            int thr = e.getKey();
+            final var thr = e.getKey();
             if (health >= thr && thr > chosenThreshold)
             {
                 chosenThreshold = thr;
@@ -34,15 +33,15 @@ public class OnJoinConfig
         return chosenChance;
     }
 
-    public boolean shouldAllowOnJoin(EntityLiving el, java.util.Random rand)
+    public boolean shouldAllowOnJoin(final EntityLiving el, final  java.util.Random rand)
     {
         // Check chunk-generation exemption
         try
         {
             if (el.world != null)
             {
-                BlockPos pos = new BlockPos(el);
-                Chunk chunk = el.world.getChunk(pos);
+                final var pos = new BlockPos(el);
+                final var chunk = el.world.getChunk(pos);
                 if (chunk != null && !chunk.isTerrainPopulated())
                 {
                     logger.info("on_join: entity {} allowed due to chunk generation (chunk not populated yet)", el.getName());
@@ -50,18 +49,18 @@ public class OnJoinConfig
                 }
             }
         }
-        catch (Throwable th)
+        catch (final Throwable th)
         {
             logger.debug("on_join: could not determine chunk population state for entity {}: {}", el.getName(), th.getMessage());
         }
 
         // Health-based checks
-        int health = (int) Math.ceil(el.getMaxHealth());
-        Double chance = getChanceForHealth(health);
+        final var health = (int) Math.ceil(el.getMaxHealth());
+        final var chance = getChanceForHealth(health);
         if (chance != null)
         {
-            double roll = rand.nextDouble();
-            boolean allow = roll <= chance;
+            final var roll = rand.nextDouble();
+            final var allow = roll <= chance;
             logger.debug("on_join health_check: entity=\"{}\", maxHealth={}, thresholdChance={}, roll={}, allow={}", el.getName(), health, chance, roll, allow);
             return allow;
         }

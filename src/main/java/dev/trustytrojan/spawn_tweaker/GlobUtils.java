@@ -12,12 +12,12 @@ public final class GlobUtils
 {
     private GlobUtils() {}
 
-    public static String globToRegex(String glob)
+    public static String globToRegex(final String glob)
     {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < glob.length(); i++)
+        final var sb = new StringBuilder();
+        for (var i = 0; i < glob.length(); i++)
         {
-            char c = glob.charAt(i);
+            final var c = glob.charAt(i);
             switch (c)
             {
                 case '*': sb.append(".*"); break;
@@ -32,7 +32,7 @@ public final class GlobUtils
         return sb.toString();
     }
 
-    public static boolean matchesAnyCompiled(String key, java.util.List<Pattern> patterns)
+    public static boolean matchesAnyCompiled(final String key, final java.util.List<Pattern> patterns)
     {
         if (patterns == null || patterns.isEmpty()) return false;
         for (Pattern pat : patterns)
@@ -42,21 +42,21 @@ public final class GlobUtils
         return false;
     }
 
-    public static Biome[] resolveBiomesFromGlobs(List<String> biomeKeys)
+    public static Biome[] resolveBiomesFromGlobs(final List<String> biomeKeys)
     {
         if (biomeKeys == null || biomeKeys.isEmpty())
             return new Biome[0];
 
         if (biomeKeys.contains("*"))
         {
-            Biome[] all = new Biome[Biome.REGISTRY.getKeys().size()];
-            int i = 0;
+            final var all = new Biome[Biome.REGISTRY.getKeys().size()];
+            var i = 0;
             for (Biome b : Biome.REGISTRY) all[i++] = b;
             return all;
         }
 
-        LinkedHashSet<Biome> matched = new LinkedHashSet<>();
-        List<Pattern> patterns = new ArrayList<>();
+        final var matched = new LinkedHashSet<>();
+        final var patterns = new ArrayList<Pattern>();
         for (String key : biomeKeys)
         {
             patterns.add(Pattern.compile(globToRegex(key)));
@@ -64,12 +64,12 @@ public final class GlobUtils
 
         for (ResourceLocation rl : Biome.REGISTRY.getKeys())
         {
-            String name = rl.toString();
+            final var name = rl.toString();
             for (Pattern p : patterns)
             {
                 if (p.matcher(name).matches())
                 {
-                    Biome b = Biome.REGISTRY.getObject(rl);
+                    final var b = Biome.REGISTRY.getObject(rl);
                     if (b != null) matched.add(b);
                     break;
                 }

@@ -15,12 +15,12 @@ public class CommandSpawnTweaker extends CommandBase {
     }
 
     @Override
-    public String getUsage(ICommandSender sender) {
+    public String getUsage(final ICommandSender sender) {
         return "/spawntweaker import | /spawntweaker export <glob> [<glob> ...]";
     }
 
     @Override
-    public void execute(MinecraftServer server, ICommandSender sender, String[] args) {
+    public void execute(final MinecraftServer server, final ICommandSender sender, final String[] args) {
         if (args.length < 1) {
             sender.sendMessage(new TextComponentString("Usage: /spawntweaker import | /spawntweaker export <modid>"));
             return;
@@ -35,7 +35,7 @@ public class CommandSpawnTweaker extends CommandBase {
                     sender.sendMessage(new TextComponentString("Usage: /spawntweaker export <glob> [<glob> ...]"));
                     return;
                 }
-                java.util.List<String> patterns = java.util.Arrays.asList(java.util.Arrays.copyOfRange(args, 1, args.length));
+                final var patterns = java.util.Arrays.asList(java.util.Arrays.copyOfRange(args, 1, args.length));
                 SpawnTweaker.exportMonsterSpawnData(patterns);
                 sender.sendMessage(new TextComponentString("Monster spawn data exported for patterns: " + String.join(", ", patterns)));
                 break;
