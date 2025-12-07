@@ -1,9 +1,10 @@
 name: Build
+
 on:
   push:
     paths:
       - src/**
-      - build.gradle
+      - '*.gradle'
 
 jobs:
   build:
