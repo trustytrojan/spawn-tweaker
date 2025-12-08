@@ -3,7 +3,6 @@ package dev.trustytrojan.spawn_tweaker;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.regex.Pattern;
@@ -11,12 +10,12 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
-import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 public class SpawnTweaker
 {
@@ -109,26 +108,21 @@ public class SpawnTweaker
             // set of biomes where each matched entity is currently listed to spawn.
 
             // Match entities and apply spawn settings
-            var totalMatched = 0;
-            final var affectedBiomes = new LinkedHashSet<>();
+            var totalEntitiesMatched = 0;
+            var totalBiomesMatched = 0;
             for (final var entityPattern : rule.forSelector.entities)
             {
-                var pattern = Pattern.compile(GlobUtils.globToRegex(entityPattern));
-                var matchedCount = 0;
+                final var pattern = Pattern.compile(GlobUtils.globToRegex(entityPattern));
+                var entitiesMatched = 0;
 
-                for (final var rl : ForgeRegistries.ENTITIES.getKeys())
+                for (final var rl : EntityList.getEntityNameList())
                 {
                     final var key = rl.toString();
                     if (!pattern.matcher(key).matches())
                         continue;
 
-                    final var entityEntry = ForgeRegistries.ENTITIES.getValue(rl);
-                    if (entityEntry == null)
-                        continue;
-
                     @SuppressWarnings("unchecked")
-                    final var entityClass = 
-                        (Class<? extends EntityLiving>) entityEntry.getEntityClass();
+                    final var entityClass = (Class<? extends EntityLiving>) EntityList.getClass(rl);
 
                     final var targetBiomesForEntity = getTargetBiomesForEntity(rule, entityClass, rl, ruleIdx, key);
                     if (targetBiomesForEntity == null || targetBiomesForEntity.length == 0)
@@ -138,26 +132,25 @@ public class SpawnTweaker
                     }
 
                     applySpawnForEntity(entityClass, rule.spawn, targetBiomesForEntity);
-                    for (final var b : targetBiomesForEntity)
-                        affectedBiomes.add(b);
 
-                    matchedCount++;
+                    totalBiomesMatched += targetBiomesForEntity.length;
+                    ++entitiesMatched;
                 }
 
-                if (matchedCount == 0)
+                if (entitiesMatched == 0)
                 {
                     logger.warn("Rule #{}: pattern \"{}\" matched zero entities", ruleIdx + 1, entityPattern);
                 }
                 else
                 {
-                    totalMatched += matchedCount;
+                    totalEntitiesMatched += entitiesMatched;
                 }
             }
 
-            if (totalMatched > 0)
+            if (totalEntitiesMatched > 0)
             {
                 logger.info("Rule #{} applied for {} entities in {} biomes",
-                    ruleIdx + 1, totalMatched, affectedBiomes.size());
+                    ruleIdx + 1, totalEntitiesMatched, totalBiomesMatched);
             }
         }
     }
@@ -171,7 +164,7 @@ public class SpawnTweaker
     {
         if (rule.forSelector.biomes == null || rule.forSelector.biomes.isEmpty())
         {
-            final var biomesForEntity = new ArrayList<>();
+            final var biomesForEntity = new ArrayList<Biome>();
             for (final var b : Biome.REGISTRY)
             {
                 for (final var entry : b.getSpawnableList(EnumCreatureType.MONSTER))

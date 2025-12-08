@@ -7,19 +7,6 @@ import java.util.List;
  */
 public class SpawnRule
 {
-    public ForSelector forSelector;
-    public SpawnConfig spawn;
-
-    public SpawnRule()
-    {
-    }
-
-    public SpawnRule(final ForSelector forSelector, final SpawnConfig spawn)
-    {
-        this.forSelector = forSelector;
-        this.spawn = spawn;
-    }
-
     /**
      * The 'for' section that specifies which entities and biomes this rule applies to.
      */
@@ -58,5 +45,18 @@ public class SpawnRule
             this.minGroupSize = minGroupSize;
             this.maxGroupSize = maxGroupSize;
         }
+    }
+
+    public ForSelector forSelector;
+    public SpawnConfig spawn;
+
+    public SpawnRule()
+    {
+    }
+
+    public SpawnRule(final ForSelector forSelector, final SpawnConfig spawn)
+    {
+        this.forSelector = forSelector;
+        this.spawn = spawn;
     }
 }
