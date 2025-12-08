@@ -3,8 +3,10 @@ name: Build
 on:
   push:
     paths:
+      - .github/workflows/ci.yml
       - src/**
       - '*.gradle'
+      - '*.properties'
 
 jobs:
   build:
