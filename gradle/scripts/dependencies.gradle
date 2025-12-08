@@ -59,7 +59,7 @@ dependencies {
     // embed = bundle dependencies into final output artifact (no relocation)
     
     // YAML parsing library
-    implementation 'org.yaml:snakeyaml:1.33'
+    embed 'org.yaml:snakeyaml:1.33'
 
     // Transitive dependencies:
     // (Dependencies that your dependency depends on)

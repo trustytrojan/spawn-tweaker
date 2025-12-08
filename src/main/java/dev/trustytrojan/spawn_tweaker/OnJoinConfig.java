@@ -38,7 +38,7 @@ public class OnJoinConfig
         return chosenChance;
     }
 
-    public boolean shouldAllowOnJoin(final EntityLiving el, final Random rand)
+    public boolean shouldAllowJoin(final EntityLiving el, final Random rand)
     {
         // Check chunk-generation exemption
         try
@@ -49,14 +49,14 @@ public class OnJoinConfig
                 final var chunk = el.world.getChunk(pos);
                 if (chunk != null && !chunk.isTerrainPopulated())
                 {
-                    logger.info("on_join: entity {} allowed due to chunk generation (chunk not populated yet)", el.getName());
+                    logger.debug("on_join: entity {} allowed due to chunk generation (chunk not populated yet)", el.getName());
                     return true;
                 }
             }
         }
         catch (final Throwable th)
         {
-            logger.debug("on_join: could not determine chunk population state for entity {}: {}", el.getName(), th.getMessage());
+            logger.warn("on_join: could not determine chunk population state for entity {}: {}", el.getName(), th.getMessage());
         }
 
         // Health-based checks
@@ -66,11 +66,11 @@ public class OnJoinConfig
         {
             final var roll = rand.nextDouble();
             final var allow = roll <= chance;
-            logger.debug("on_join health_check: entity=\"{}\", maxHealth={}, thresholdChance={}, roll={}, allow={}", el.getName(), health, chance, roll, allow);
+            logger.info("on_join health_check: entity=\"{}\", maxHealth={}, chance={}, roll={:.2f}, allow={}", el.getName(), health, chance, roll, allow);
             return allow;
         }
 
-        logger.debug("on_join: non-boss entity \"{}\" allowed (no threshold matched for health={})", el.getName(), health);
+        logger.debug("on_join: entity \"{}\" allowed (no threshold matched for health={})", el.getName(), health);
         return true;
     }
 }

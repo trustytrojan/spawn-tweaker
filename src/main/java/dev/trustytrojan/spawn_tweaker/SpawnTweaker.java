@@ -3,7 +3,9 @@ package dev.trustytrojan.spawn_tweaker;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import org.apache.logging.log4j.LogManager;
@@ -20,6 +22,7 @@ public class SpawnTweaker
 {
     private static final Logger logger = LogManager.getLogger();
     private static Biome[] ALL_BIOMES;
+
     // Configuration applied on entity join events
     private static volatile OnJoinConfig onJoinConfig = null;
 
@@ -42,16 +45,13 @@ public class SpawnTweaker
 
         final var dataDir = new File("spawn_tweaker");
         final var yamlFile = new File(dataDir, "monster_spawns.yml");
-        // JSON support removed; only YAML is used
 
         List<SpawnRule> rules = null;
 
-        // Try YAML first
         if (yamlFile.exists())
         {
             rules = YamlHandler.readRules(yamlFile);
         }
-        // (JSON support removed - prefer YAML)
         else
         {
             logger.warn("No monster spawn data file found (tried .yml)");
@@ -68,8 +68,6 @@ public class SpawnTweaker
         logger.info("Monster spawn data imported successfully");
     }
 
-    // on_join config is now provided by `OnJoinConfig` (top-level class)
-
     public static void setOnJoinConfig(final OnJoinConfig cfg)
     {
         onJoinConfig = cfg;
@@ -83,11 +81,11 @@ public class SpawnTweaker
     /**
      * Evaluate whether an entity's spawn should be allowed at join, per configured settings.
      */
-    public static boolean shouldAllowOnJoin(final net.minecraft.entity.EntityLiving el, final  java.util.Random rand)
+    public static boolean shouldAllowOnJoin(final EntityLiving el, final Random rand)
     {
         final var cfg = onJoinConfig;
         if (cfg == null) return true; // no config => allow
-        return cfg.shouldAllowOnJoin(el, rand);
+        return cfg.shouldAllowJoin(el, rand);
     }
 
     /**
@@ -112,7 +110,7 @@ public class SpawnTweaker
 
             // Match entities and apply spawn settings
             var totalMatched = 0;
-            final var affectedBiomes = new java.util.LinkedHashSet<>();
+            final var affectedBiomes = new LinkedHashSet<>();
             for (final var entityPattern : rule.forSelector.entities)
             {
                 var pattern = Pattern.compile(GlobUtils.globToRegex(entityPattern));
@@ -173,7 +171,7 @@ public class SpawnTweaker
     {
         if (rule.forSelector.biomes == null || rule.forSelector.biomes.isEmpty())
         {
-            final var biomesForEntity = new java.util.ArrayList<>();
+            final var biomesForEntity = new ArrayList<>();
             for (final var b : Biome.REGISTRY)
             {
                 for (final var entry : b.getSpawnableList(EnumCreatureType.MONSTER))
@@ -203,13 +201,13 @@ public class SpawnTweaker
     }
 
     private static void applySpawnForEntity(
-        final Class<? extends EntityLiving> entityClass,
+        final Class<? extends EntityLiving> clazz,
         final SpawnRule.SpawnConfig spawn,
-        final Biome[] targetBiomesForEntity)
+        final Biome[] biomes)
     {
-        EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, ALL_BIOMES);
-        EntityRegistry.addSpawn(entityClass, spawn.weight, spawn.minGroupSize, spawn.maxGroupSize,
-            EnumCreatureType.MONSTER, targetBiomesForEntity);
+        EntityRegistry.removeSpawn(clazz, EnumCreatureType.MONSTER, ALL_BIOMES);
+        EntityRegistry.addSpawn(clazz, spawn.weight, spawn.minGroupSize, spawn.maxGroupSize,
+            EnumCreatureType.MONSTER, biomes);
     }
 
     /**

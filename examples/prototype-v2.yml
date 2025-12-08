@@ -1,0 +1,56 @@
+# any text you see here starting with a '#' is a comment, it doesn't affect the configuration
+
+# 'on_join' lets you allow/deny an entity trying to join the world for certain conditions
+on_join:
+  # the 'deny' list contains "rule" objects similar to spawn.json from "In Control!"
+  # if all conditions in **one** of the rules is satisfied, the spawn is **denied**,
+  # and no other rules are evaluated.
+  deny:
+    # this rule denies Toy Chica from spawning if there are already (1 * loaded_chunks / 289)
+    # of them in the world (vanilla spawn cap logic). this is specified by ',perchunk' after the amount.
+    - mob: five_nights_at_freddycraft:toychica
+      at_least: 1,perchunk
+
+    # deny mobs from the mod 'mmm' if there are at least 10 of them in the world
+    - mod: mmm
+      at_least: 10
+
+    # deny mobs from 'grimoireofgaia' or 'muchmorespiders' if their max HP is at least 20
+    # and a random roll in [0, 1] is <= 0.25
+    - mods: [grimoireofgaia, muchmorespiders]
+      health: '>=20'
+      random: 0.25
+
+    # deny all mobs with at least 30 max HP if a random roll in [0, 1] is <= 0.6
+    - health: '>=30'
+      random: 0.6
+
+    # deny all mobs if there are at least 100 already in the world
+    - atleast: 100
+
+# 'spawns' sets the weight and min/max group sizes **for each combination** of mobs & biomes
+spawns:
+  - # a list of 'modid:entity' glob patterns to match against
+    mobs:
+      - modid:entity
+      - modX:*
+
+    # a list of 'modid:biome' glob patterns to match against
+    biomes:
+      - minecraft:plains
+      - biomesoplenty:*
+
+    # the weight of the spawn. higher number means higher spawn chance in the biomes above.
+    weight: 1
+
+    # the [minimum, maximum] group size of the spawn.
+    # in this case, only 1 entity will spawn for each successful hit.
+    group_size: [1, 1]
+
+  # in this object, we omit the 'biomes' list. omitting 'biomes' means the affected biomes
+  # are what each mob **was already spawning in**. for example, zombies by default can spawn
+  # in plains & forest, so they will be included when applying the new weight and group sizes.
+  - mobs:
+      - minecraft:zombie
+    weight: 1000
+    group_size: [10, 20]
