@@ -16,14 +16,14 @@ on_join:
       at_least: 10
 
     # deny mobs from 'grimoireofgaia' or 'muchmorespiders' if their max HP is at least 20
-    # and a random roll in [0, 1] is <= 0.25
+    # and a random number between 0 and 1 is >= 0.25
     - mods: [grimoireofgaia, muchmorespiders]
       health: '>=20'
-      random: 0.25
+      random: '>=0.25'
 
-    # deny all mobs with at least 30 max HP if a random roll in [0, 1] is <= 0.6
+    # deny all mobs with at least 30 max HP if a random number between 0 and 1 is <= 0.6
     - health: '>=30'
-      random: 0.6
+      random: '<=0.6'
 
     # deny all mobs if there are at least 100 already in the world
     - atleast: 100
