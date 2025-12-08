@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 /**
@@ -27,7 +28,8 @@ public class YamlHandler
      * @param file The YAML file to read from
      * @return List of spawn rules, or null if file doesn't exist or an error occurs
      */
-    public static List<SpawnRule> readRules(File file)
+    @SuppressWarnings("unchecked")
+    public static List<SpawnRule> readRules(final File file)
     {
         if (!file.exists())
         {
@@ -35,39 +37,141 @@ public class YamlHandler
             return null;
         }
 
-        try (FileReader reader = new FileReader(file))
+        try (final var reader = new FileReader(file))
         {
-            List<Map<String, Object>> rawRules = YAML.load(reader);
-            
-            if (rawRules == null || rawRules.isEmpty())
+            // YAML now has a root mapping: it contains keys like 'on_join' and 'rules'
+            final var loaded = YAML.load(reader);
+            if (loaded == null)
             {
                 logger.warn("No spawn rules found in YAML file");
                 return new ArrayList<>();
             }
 
-            List<SpawnRule> rules = new ArrayList<>();
-            for (int i = 0; i < rawRules.size(); i++)
+            // Parse 'on_join' if present
+            if (loaded instanceof Map)
             {
-                Map<String, Object> rawRule = rawRules.get(i);
-                SpawnRule rule = parseRule(rawRule, i + 1);
-                if (rule != null)
+                final var root = (Map<String, Object>) loaded;
+                try
                 {
-                    rules.add(rule);
+                    final var onJoinRaw = (Map<String, Object>) root.get("on_join");
+                    if (onJoinRaw != null)
+                    {
+                        logger.debug("Parsing on_join section from YAML");
+                        parseOnJoin(onJoinRaw);
+                    }
+                    else
+                    {
+                        // Clear previous on_join config if YAML doesn't contain it
+                        SpawnTweaker.setOnJoinConfig(null);
+                        logger.debug("No on_join section found in YAML; cleared on_join config");
+                    }
                 }
+                catch (final ClassCastException e)
+                {
+                    logger.error("Malformed 'on_join' section in YAML - expected mapping", e);
+                }
+
+                // Parse the 'rules' list
+                final var rawRules = (List<Map<String, Object>>) root.get("rules");
+                final var rules = new ArrayList<SpawnRule>();
+                if (rawRules != null)
+                {
+                    for (var i = 0; i < rawRules.size(); i++)
+                    {
+                        final var rawRule = rawRules.get(i);
+                        final var rule = parseRule(rawRule, i + 1);
+                        if (rule != null)
+                        {
+                            rules.add(rule);
+                        }
+                    }
+                }
+
+                logger.info("Loaded {} spawn rules from YAML: {}", rules.size(), file.getName());
+                return rules;
             }
 
-            logger.info("Loaded {} spawn rules from YAML: {}", rules.size(), file.getName());
-            return rules;
+            // Fallback to legacy format (plain list of rules at root)
+            if (loaded instanceof List)
+            {
+                final var rawRules = (List<Map<String, Object>>) loaded;
+                if (rawRules == null || rawRules.isEmpty())
+                {
+                    logger.warn("No spawn rules found in YAML file");
+                    return new ArrayList<>();
+                }
+
+                final var rules = new ArrayList<SpawnRule>();
+                for (var i = 0; i < rawRules.size(); i++)
+                {
+                    final var rawRule = rawRules.get(i);
+                    final var rule = parseRule(rawRule, i + 1);
+                    if (rule != null)
+                    {
+                        rules.add(rule);
+                    }
+                }
+
+                logger.info("Loaded {} spawn rules from YAML: {}", rules.size(), file.getName());
+                // Clear on-join config (legacy file won't have it)
+                SpawnTweaker.setOnJoinConfig(null);
+                return rules;
+            }
+
+            logger.warn("YAML file contains invalid structure; expected mapping with 'rules' or list of rules");
+            return new ArrayList<>();
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             logger.error("Failed to read YAML file: " + file.getAbsolutePath(), e);
             return null;
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             logger.error("Failed to parse YAML file: " + file.getAbsolutePath(), e);
             return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void parseOnJoin(final Map<String, Object> onJoinRaw)
+    {
+        try
+        {
+            final var minHealthChance = new LinkedHashMap<Integer, Double>();
+            final var rawMin = (Map<Object, Object>) onJoinRaw.get("min_health_chance");
+            if (rawMin != null)
+            {
+                for (final var e : rawMin.entrySet())
+                {
+                    try
+                    {
+                        final var key = Integer.parseInt(e.getKey().toString());
+                        final var val = e.getValue();
+                        if (val instanceof Number)
+                        {
+                            minHealthChance.put(key, ((Number) val).doubleValue());
+                        }
+                    }
+                    catch (final NumberFormatException nfe)
+                    {
+                        logger.warn("Skipping invalid min_health_chance key: {}", e.getKey());
+                    }
+                }
+            }
+            final var cfg = new OnJoinConfig(minHealthChance);
+            SpawnTweaker.setOnJoinConfig(cfg);
+            logger.info("Loaded on_join config: min_health_chance entries={}", minHealthChance.size());
+
+            // Log each threshold for visibility
+            for (final var e : minHealthChance.entrySet())
+            {
+                logger.debug("on_join: min_health_chance threshold {} -> {}", e.getKey(), e.getValue());
+            }
+        }
+        catch (final Exception e)
+        {
+            logger.error("Failed to parse on_join section", e);
         }
     }
 
@@ -78,114 +182,127 @@ public class YamlHandler
      * @param rules The spawn rules to write
      * @return true if successful, false otherwise
      */
-    public static boolean writeRules(File file, List<SpawnRule> rules)
+    public static boolean writeRules(final File file, final  List<SpawnRule> rules)
     {
         // Ensure parent directory exists
-        File parentDir = file.getParentFile();
+        final var parentDir = file.getParentFile();
         if (parentDir != null && !parentDir.exists())
         {
             parentDir.mkdirs();
         }
 
-        try (FileWriter writer = new FileWriter(file))
+        try (final var writer = new FileWriter(file))
         {
-            List<Map<String, Object>> rawRules = new ArrayList<>();
-            for (SpawnRule rule : rules)
+            // Build entity-centric export list: one top-level list item per entity
+            final var entityList = new ArrayList<>();
+
+            for (final var rule : rules)
             {
-                rawRules.add(serializeRule(rule));
+                if (rule == null || rule.forSelector == null || rule.spawn == null) continue;
+                final var entities = rule.forSelector.entities;
+                final var biomes = rule.forSelector.biomes;
+
+                for (final var entityKey : entities)
+                {
+                    final var ent = new LinkedHashMap<>();
+                    ent.put("entity", entityKey);
+                    ent.put("weight", rule.spawn.weight);
+                    ent.put("minGroupSize", rule.spawn.minGroupSize);
+                    ent.put("maxGroupSize", rule.spawn.maxGroupSize);
+
+                    // Group biomes by resource domain
+                    final var domainMap = new LinkedHashMap<String, List<String>>();
+                    if (biomes != null)
+                    {
+                        for (final var biome : biomes)
+                        {
+                            var domain = "minecraft";
+                            var name = biome;
+                            var idx = biome.indexOf(':');
+                            if (idx >= 0)
+                            {
+                                domain = biome.substring(0, idx);
+                                name = biome.substring(idx + 1);
+                            }
+                            domainMap.computeIfAbsent(domain, k -> new ArrayList<String>()).add(name);
+                        }
+                    }
+                    ent.put("biomes", domainMap);
+                    entityList.add(ent);
+                }
             }
 
-            YAML.dump(rawRules, writer);
+            // Prepare YAML dumper options to avoid line wrapping and use block style
+            final var options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+            options.setWidth(Integer.MAX_VALUE);
+            final var yaml = new Yaml(options);
+            yaml.dump(entityList, writer);
             logger.info("Exported {} spawn rules to YAML: {}", rules.size(), file.getAbsolutePath());
             return true;
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             logger.error("Failed to write YAML file: " + file.getAbsolutePath(), e);
             return false;
         }
     }
 
-    private static SpawnRule parseRule(Map<String, Object> rawRule, int ruleIndex)
+    @SuppressWarnings("unchecked")
+    private static SpawnRule parseRule(final Map<String, Object> rawRule, final  int ruleIndex)
     {
         try
         {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> forSection = (Map<String, Object>) rawRule.get("for");
+            final var forSection = (Map<String, Object>) rawRule.get("for");
             if (forSection == null)
             {
                 logger.error("Rule #{}: missing 'for' section, skipping", ruleIndex);
                 return null;
             }
 
-            @SuppressWarnings("unchecked")
-            List<String> entities = (List<String>) forSection.get("entities");
-            @SuppressWarnings("unchecked")
-            List<String> biomes = (List<String>) forSection.get("biomes");
+            final var entities = (List<String>) forSection.get("entities");
+                var biomes = (List<String>) forSection.get("biomes");
+                if (entities == null || entities.isEmpty())
+                {
+                    logger.error("Rule #{}: missing or empty 'entities' in 'for' section, skipping", ruleIndex);
+                    return null;
+                }
+                if (biomes == null || biomes.isEmpty())
+                {
+                    // Biomes is optional; we will treat this as 'use entity's current biomes' at apply-time
+                    logger.debug("Rule #{}: no 'biomes' specified; will use entity's current spawn biomes", ruleIndex);
+                    biomes = null;
+                }
 
-            if (entities == null || entities.isEmpty())
-            {
-                logger.error("Rule #{}: missing or empty 'entities' in 'for' section, skipping", ruleIndex);
-                return null;
-            }
-
-            if (biomes == null || biomes.isEmpty())
-            {
-                logger.error("Rule #{}: missing or empty 'biomes' in 'for' section, skipping", ruleIndex);
-                return null;
-            }
-
-            @SuppressWarnings("unchecked")
-            Map<String, Object> spawnSection = (Map<String, Object>) rawRule.get("spawn");
+            final var spawnSection = (Map<String, Object>) rawRule.get("spawn");
             if (spawnSection == null)
             {
                 logger.error("Rule #{}: missing 'spawn' section, skipping", ruleIndex);
                 return null;
             }
 
-            int weight = getIntValue(spawnSection, "weight", 1);
-            int minGroupSize = getIntValue(spawnSection, "minGroupSize", 1);
-            int maxGroupSize = getIntValue(spawnSection, "maxGroupSize", 1);
+            final var weight = getIntValue(spawnSection, "weight", 1);
+            final var minGroupSize = getIntValue(spawnSection, "minGroupSize", 1);
+            final var maxGroupSize = getIntValue(spawnSection, "maxGroupSize", 1);
 
-            SpawnRule.ForSelector forSelector = new SpawnRule.ForSelector(entities, biomes);
-            SpawnRule.SpawnConfig spawnConfig = new SpawnRule.SpawnConfig(weight, minGroupSize, maxGroupSize);
+            final var forSelector = new SpawnRule.ForSelector(entities, biomes);
+            final var spawnConfig = new SpawnRule.SpawnConfig(weight, minGroupSize, maxGroupSize);
             
             return new SpawnRule(forSelector, spawnConfig);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             logger.error("Rule #{}: failed to parse rule", ruleIndex, e);
             return null;
         }
     }
 
-    private static Map<String, Object> serializeRule(SpawnRule rule)
+    private static int getIntValue(final Map<String, Object> map, final  String key, final  int defaultValue)
     {
-        Map<String, Object> result = new LinkedHashMap<>();
-        
-        // Create 'for' section
-        Map<String, Object> forSection = new LinkedHashMap<>();
-        forSection.put("entities", rule.forSelector.entities);
-        forSection.put("biomes", rule.forSelector.biomes);
-        
-        // Create 'spawn' section
-        Map<String, Object> spawnSection = new LinkedHashMap<>();
-        spawnSection.put("weight", rule.spawn.weight);
-        spawnSection.put("minGroupSize", rule.spawn.minGroupSize);
-        spawnSection.put("maxGroupSize", rule.spawn.maxGroupSize);
-        
-        result.put("for", forSection);
-        result.put("spawn", spawnSection);
-        
-        return result;
-    }
-
-    private static int getIntValue(Map<String, Object> map, String key, int defaultValue)
-    {
-        Object value = map.get(key);
-        if (value instanceof Number)
+        final var value = map.get(key);
+        if (value instanceof final Number n)
         {
-            return ((Number) value).intValue();
+            return n.intValue();
         }
         return defaultValue;
     }

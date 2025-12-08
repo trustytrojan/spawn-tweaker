@@ -7,19 +7,6 @@ import java.util.List;
  */
 public class SpawnRule
 {
-    public ForSelector forSelector;
-    public SpawnConfig spawn;
-
-    public SpawnRule()
-    {
-    }
-
-    public SpawnRule(ForSelector forSelector, SpawnConfig spawn)
-    {
-        this.forSelector = forSelector;
-        this.spawn = spawn;
-    }
-
     /**
      * The 'for' section that specifies which entities and biomes this rule applies to.
      */
@@ -32,7 +19,7 @@ public class SpawnRule
         {
         }
 
-        public ForSelector(List<String> entities, List<String> biomes)
+        public ForSelector(final List<String> entities, final List<String> biomes)
         {
             this.entities = entities;
             this.biomes = biomes;
@@ -52,11 +39,24 @@ public class SpawnRule
         {
         }
 
-        public SpawnConfig(int weight, int minGroupSize, int maxGroupSize)
+        public SpawnConfig(final int weight, final int minGroupSize, final int maxGroupSize)
         {
             this.weight = weight;
             this.minGroupSize = minGroupSize;
             this.maxGroupSize = maxGroupSize;
         }
+    }
+
+    public ForSelector forSelector;
+    public SpawnConfig spawn;
+
+    public SpawnRule()
+    {
+    }
+
+    public SpawnRule(final ForSelector forSelector, final SpawnConfig spawn)
+    {
+        this.forSelector = forSelector;
+        this.spawn = spawn;
     }
 }

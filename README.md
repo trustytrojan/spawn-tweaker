@@ -6,23 +6,25 @@ Spawn Tweaker is a Forge 1.12.2 mod allowing you to change the spawn weight and 
 - `/spawntweaker import`
   - Reloads the spawn configuration from the `spawn_tweaker` directory.
   - Use this after editing your spawn configuration to apply changes without restarting the game.
-  - **Note:** On Minecraft startup, the mod will automatically import spawn data if either `monster_spawns.yml` or `monster_spawns.json` exists (YAML is tried first).
+  - **Note:** On Minecraft startup, the mod will automatically import spawn data from `monster_spawns.yml` (YAML only).
 
 - `/spawntweaker export <glob> [<glob> ...]`
-  - Exports current spawn data for entities matching the provided glob patterns to both `spawn_tweaker/monster_spawns_export.yml` and `spawn_tweaker/monster_spawns_export.json`.
+  - Exports current spawn data for entities matching the provided glob patterns to `spawn_tweaker/monster_spawns_export.yml`.
   - Examples:
     - `/spawntweaker export *` - Exports spawn data for ALL registered monster entities.
     - `/spawntweaker export mod1:*` - Exports only monsters from the mod `mod1`.
     - `/spawntweaker export thermalfoundation:* enderzoo:enderminy` - Exports Thermal Foundation mobs and the specific Enderminy entity.
   - You should use the exported spawn data as a starting point to decide what to write for your configuration.
+  
+    Note: The exported YAML uses an entity-centric layout intended for human browsing or copying into a config; this export format is NOT a valid importable configuration. Use exported data only as a reference when editing `monster_spawns.yml`.
 
 ## Configuration Files
 
-Spawn Tweaker supports both **YAML** (`.yml`) and **JSON** (`.json`) formats. YAML is recommended for its readability.
+Spawn Tweaker supports **YAML** (`.yml`) format. YAML is recommended for its readability.
 
 ### File Location
 Configuration files are located in the `spawn_tweaker` folder in your game directory:
-- `monster_spawns.yml` (preferred) or `monster_spawns.json`
+- `monster_spawns.yml` (preferred)
 
 ### YAML Format (Recommended)
 *Please remember that in YAML leading whitespace **is** significant. **Do not** report parse errors as issues.*
@@ -54,30 +56,7 @@ Configuration files are located in the `spawn_tweaker` folder in your game direc
     maxGroupSize: 3
 ```
 
-### JSON Format (Also Supported)
-
-**Structure:**
-```json
-[
-  {
-    "for": {
-      "entities": [
-        "modid:entity_name",
-        "modX:*"
-      ],
-      "biomes": [
-        "minecraft:plains",
-        "biomesoplenty:*"
-      ]
-    },
-    "spawn": {
-      "weight": 100,
-      "minGroupSize": 4,
-      "maxGroupSize": 4
-    }
-  }
-]
-```
+<!-- JSON support removed; YAML is the preferred format. -->
 
 ### Configuration Fields
 
@@ -120,6 +99,6 @@ This configuration should yield output similar to the following in your logs upo
 
 - **Pattern Matching**: Both entity and biome fields support glob patterns using `*` (matches any characters) and `?` (matches single character).
 - **Multiple Rules**: You can define multiple rules to configure different entities & biomes with different spawn settings.
-- **Auto-Detection**: On import, the mod tries YAML first (`.yml`), then falls back to JSON (`.json`).
-- **Export**: The export command generates both YAML and JSON files for your convenience.
+ - **Auto-Detection**: On import, the mod reads `monster_spawns.yml` (YAML only).
+ - **Export**: The export command generates `monster_spawns_export.yml` for your convenience.
 - **Validation**: If a pattern matches no entities or no biomes, the entry is skipped and a warning is logged.
