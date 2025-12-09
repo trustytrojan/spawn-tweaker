@@ -26,7 +26,7 @@ check_spawn:
   - for:
       mod: [grimoireofgaia, muchmorespiders]
       health: '>=20'
-    if: { random: 0.25 }
+    if: {random: 0.25}
     then: default
     else: deny
 
