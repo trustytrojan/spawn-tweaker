@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import dev.trustytrojan.spawn_tweaker.GlobUtils;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.ResourceLocation;
@@ -13,6 +16,7 @@ import net.minecraftforge.fml.common.registry.EntityRegistry;
 
 public final class ConditionChecker<E extends Event>
 {
+	private static final Logger logger = LogManager.getLogger();
 	private final IEventQuery<E> eventQuery;
 	private E event;
 
@@ -60,14 +64,14 @@ public final class ConditionChecker<E extends Event>
 	{
 		return checkRegistryName(name ->
 		{
-			final var domain = name.toString().split(":" )[0];
+			final var domain = name.toString().split(":")[0];
 			if (modParam instanceof String)
 				return domain.matches(GlobUtils.globToRegex((String) modParam));
 			if (modParam instanceof List)
 			{
 				for (final var m : (List<?>) modParam)
 					if (m != null && domain.matches(GlobUtils.globToRegex(m.toString())))
-						return true;
+					return true;
 			}
 			return false;
 		});
@@ -78,7 +82,7 @@ public final class ConditionChecker<E extends Event>
 		return checkRegistryName(name ->
 		{
 			final var full = name.toString();
-			final var parts = full.split(":" );
+			final var parts = full.split(":");
 			final var domain = parts[0];
 			final var path = parts.length > 1 ? parts[1] : "";
 			final var allowed = mobs.get(domain);
@@ -91,9 +95,9 @@ public final class ConditionChecker<E extends Event>
 		return checkRegistryName(name -> name.toString().matches(GlobUtils.globToRegex(mob)));
 	}
 
-	public boolean health(final String expr)
+	public boolean health(final NumberCondition condition)
 	{
-		return checkLiving(ent -> RuleUtils.compareNumberCondition(expr, ent.getMaxHealth()));
+		return checkLiving(ent -> RuleUtils.compareNumberCondition(condition, ent.getMaxHealth()));
 	}
 
 	// === Condition checks ===
@@ -109,38 +113,43 @@ public final class ConditionChecker<E extends Event>
 		return light >= min && light <= max;
 	}
 
-	public boolean height(final String expr)
+	public boolean height(final NumberCondition condition)
 	{
-		return RuleUtils.compareNumberCondition(expr, eventQuery.getY(event));
+		final var y = eventQuery.getY(event);
+		final var result = RuleUtils.compareNumberCondition(condition, y);
+		logger.debug("    height check: y={}, condition={}, result={}", y, condition, result);
+		return result;
 	}
 
-	public boolean count(final String spec, final Rule.Selector selector)
+	public boolean count(final CountCondition condition, final Map<String, List<String>> mobs, final Object mod)
 	{
-		final var parts = spec.split(",");
-		final var condStr = parts[0].trim();
-		final var perChunk = parts.length > 1 && parts[1].trim().equalsIgnoreCase("perchunk");
+		if (condition == null)
+			return true;
+
 		final var pos = eventQuery.getPos(event);
 		final var chunkX = pos.getX() >> 4;
 		final var chunkZ = pos.getZ() >> 4;
 		final var world = eventQuery.getWorld(event);
-		final var count = computeCountForSelector(world, selector, perChunk, chunkX, chunkZ);
-		return RuleUtils.compareNumberCondition(condStr, count);
+		final var perChunk = condition.isPerChunk();
+		final var entityCount = computeCountForSelector(world, mobs, mod, perChunk, chunkX, chunkZ);
+		return RuleUtils.compareNumberCondition(condition, entityCount);
 	}
 
 	private int computeCountForSelector(
 		final World world,
-		final Rule.Selector selector,
+		final Map<String, List<String>> mobs,
+		final Object mod,
 		final boolean perChunk,
 		final int chunkX,
 		final int chunkZ)
 	{
-		if (selector != null && selector.mobs != null && !selector.mobs.isEmpty())
+		if (mobs != null && !mobs.isEmpty())
 		{
-			return countByMobs(world, selector.mobs, perChunk, chunkX, chunkZ);
+			return countByMobs(world, mobs, perChunk, chunkX, chunkZ);
 		}
-		if (selector != null && selector.mod != null)
+		if (mod != null)
 		{
-			return countByMod(world, selector.mod, perChunk, chunkX, chunkZ);
+			return countByMod(world, mod, perChunk, chunkX, chunkZ);
 		}
 		return countAll(world, perChunk, chunkX, chunkZ);
 	}
@@ -158,13 +167,7 @@ public final class ConditionChecker<E extends Event>
 			final var list = mobs.get(domain);
 			if (list == null)
 				continue;
-			for (final var path : list)
-			{
-				final var full = domain + ":" + path;
-				count += perChunk
-					? RuleUtils.countEntitiesMatchingGlobInChunk(world, full, chunkX, chunkZ)
-					: RuleUtils.countEntitiesMatchingGlob(world, full);
-			}
+			for (final var path : list) count += countEntities(world, domain + ":" + path, perChunk, chunkX, chunkZ);
 		}
 		return count;
 	}
@@ -177,26 +180,40 @@ public final class ConditionChecker<E extends Event>
 		final int chunkZ)
 	{
 		if (mod instanceof String)
-		{
-			final var modStr = (String) mod;
-			return perChunk
-				? RuleUtils.countEntitiesMatchingModInChunk(world, modStr, chunkX, chunkZ)
-				: RuleUtils.countEntitiesMatchingMod(world, modStr);
-		}
-		int total = 0;
+			return countEntitiesByMod(world, (String) mod, perChunk, chunkX, chunkZ);
 		if (mod instanceof List)
 		{
-			for (final var m : (List<?>) mod)
-			{
-				if (m == null)
-					continue;
-				final var modStr = m.toString();
-				total += perChunk
-					? RuleUtils.countEntitiesMatchingModInChunk(world, modStr, chunkX, chunkZ)
-					: RuleUtils.countEntitiesMatchingMod(world, modStr);
-			}
+			int total = 0;
+			for (final var m : (List<?>) mod) if (m != null)
+				total += countEntitiesByMod(world, m.toString(), perChunk, chunkX, chunkZ);
+			return total;
 		}
-		return total;
+		return 0;
+	}
+
+	// Helper to reduce duplication
+	private int countEntities(
+		final World world,
+		final String glob,
+		final boolean perChunk,
+		final int chunkX,
+		final int chunkZ)
+	{
+		return perChunk
+			? RuleUtils.countEntitiesMatchingGlobInChunk(world, glob, chunkX, chunkZ)
+			: RuleUtils.countEntitiesMatchingGlob(world, glob);
+	}
+
+	private int countEntitiesByMod(
+		final World world,
+		final String mod,
+		final boolean perChunk,
+		final int chunkX,
+		final int chunkZ)
+	{
+		return perChunk
+			? RuleUtils.countEntitiesMatchingModInChunk(world, mod, chunkX, chunkZ)
+			: RuleUtils.countEntitiesMatchingMod(world, mod);
 	}
 
 	private int countAll(final World world, final boolean perChunk, final int chunkX, final int chunkZ)

@@ -14,6 +14,22 @@ public final class RuleUtils
 	private RuleUtils()
 	{}
 
+	/**
+	 * Compare a value against a NumberCondition object. Returns true if the value satisfies all constraints in the
+	 * condition.
+	 */
+	public static boolean compareNumberCondition(final NumberCondition condition, final double value)
+	{
+		if (condition == null)
+			return true;
+		return condition.matches(value);
+	}
+
+	/**
+	 * @deprecated Use compareNumberCondition(NumberCondition, double) instead. Parse and compare a value against a
+	 *             legacy string expression (e.g., ">=20", "<100").
+	 */
+	@Deprecated
 	public static boolean compareNumberCondition(final String expr, final double value)
 	{
 		if (expr == null || expr.isEmpty())

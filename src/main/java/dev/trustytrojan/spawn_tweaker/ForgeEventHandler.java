@@ -1,6 +1,7 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.monster.IMob;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -15,8 +16,10 @@ public class ForgeEventHandler
 	@SubscribeEvent(priority = EventPriority.LOWEST)
 	public void onEntityJoinWorld(final EntityJoinWorldEvent event)
 	{
+		final var el = (EntityLiving) event.getEntity();
+
 		// filter to only monsters, only run this on a server
-		if (!(event.getEntity() instanceof final EntityLiving el) || event.getWorld().isRemote)
+		if (!(el instanceof IMob) || event.getWorld().isRemote)
 			return;
 
 		// Check spawn rules tied to 'on_join'

@@ -3,18 +3,20 @@ package dev.trustytrojan.spawn_tweaker.rule;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
-// No functional BiFunction required - we use RuleEvaluator instead
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-// EntityLiving and EntityRegistry are handled by Rule helpers
-
-// No extra imports required
 
 public class JoinRule extends Rule<EntityJoinWorldEvent, Boolean>
 {
+	private static final Logger logger = LogManager.getLogger();
+
 	public static final IEventQuery<EntityJoinWorldEvent> EVENT_QUERY_JOIN = new IEventQuery<EntityJoinWorldEvent>() {
 		@Override
 		public World getWorld(final EntityJoinWorldEvent o)
@@ -47,44 +49,52 @@ public class JoinRule extends Rule<EntityJoinWorldEvent, Boolean>
 		}
 	};
 
-	public String mob;
-	public Object mod; // String or List<String>
-	public String count;
-
-	public void buildChecks()
+	public JoinRule()
 	{
-		// Map the lightweight JoinRule fields into the generic Rule selector/conditions format
-		this.selector = null;
-		this.conditions = null;
+		super(EVENT_QUERY_JOIN);
+	}
 
-		if (mob != null || mod != null)
+	/**
+	 * Parse a JoinRule from YAML data.
+	 */
+	public static JoinRule fromYaml(final Map<String, Object> raw)
+	{
+		final var rule = new JoinRule();
+		logger.debug("Parsing JoinRule: {}", raw);
+
+		// Parse mob - convert to mobs map for selector
+		final var mob = (String) raw.get("mob");
+		final Map<String, List<String>> mobsMap;
+		if (mob != null)
 		{
-			this.selector = new Rule.Selector();
-			if (mob != null)
-			{
-				final var parts = mob.split(":", 2);
-				final var domain = parts[0];
-				final var path = parts.length > 1 ? parts[1] : "";
-				final var map = new HashMap<String, List<String>>();
-				final var list = new ArrayList<String>();
-				list.add(path);
-				map.put(domain, list);
-				this.selector.mobs = map;
-			}
-			if (mod != null)
-			{
-				this.selector.mod = mod;
-			}
+			final var parts = mob.split(":", 2);
+			final var domain = parts[0];
+			final var path = parts.length > 1 ? parts[1] : "";
+			final var map = new HashMap<String, List<String>>();
+			final var list = new ArrayList<String>();
+			list.add(path);
+			map.put(domain, list);
+			mobsMap = map;
+			rule.addSelectorIf(mobsMap, c -> !mobsMap.isEmpty() && c.mobs(mobsMap));
+		}
+		else
+		{
+			mobsMap = null;
 		}
 
+		// Parse mod
+		final var mod = raw.get("mod");
+		rule.addSelectorIf(mod, c -> c.mod(mod));
+
+		// Parse count - needs mobs and mod
+		final var count = CountCondition.fromYaml(raw.get("count"));
 		if (count != null)
 		{
-			this.conditions = new Rule.Conditions();
-			this.conditions.count = count;
+			rule.addConditionIf(count, c -> c.count(count, mobsMap, mod));
 		}
 
-		// Use Rule.buildEvaluator() to translate selectors/conditions into a RuleEvaluator
-		buildEvaluator();
+		logger.info("JoinRule: {} selectors, {} conditions", rule.selectorChecks.size(), rule.conditionChecks.size());
+		return rule;
 	}
 
 	@Override
@@ -102,20 +112,32 @@ public class JoinRule extends Rule<EntityJoinWorldEvent, Boolean>
 		if (!hasRegistryEntry(living))
 			return false;
 
-		if (evaluator == null)
-			buildEvaluator();
-		if (!evaluator.match(event, EVENT_QUERY_JOIN))
-			return false;
+		logger.debug("Checking join: {}", living.getName());
 
-		final var evalResult = evaluator.evaluate(event, EVENT_QUERY_JOIN);
+		// Check selectors
+		if (!matchSelectors(event, EVENT_QUERY_JOIN))
+		{
+			logger.debug("  Selector failed");
+			return false;
+		}
+		logger.debug("  Selector passed");
+
+		// Evaluate conditions
+		final var evalResult = evaluateConditions(event, EVENT_QUERY_JOIN);
+		logger.debug("  Conditions result: {}", evalResult);
 		if (evalResult != null)
 			return evalResult;
 
 		// If there were no explicit conditions, a selector match should be considered a match
-		if (conditions == null)
+		if (conditionChecks.isEmpty())
+		{
+			logger.debug("  No conditions, match=true");
 			return true;
+		}
 
 		// Otherwise return then/default result (probably false for JoinRule)
-		return thenResult != null ? thenResult : getDefaultResult();
+		final var result = thenResult != null ? thenResult : getDefaultResult();
+		logger.debug("  Final: {}", result);
+		return result;
 	}
 }
