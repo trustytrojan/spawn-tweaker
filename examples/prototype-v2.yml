@@ -7,14 +7,14 @@ on_join_deny:
   # of them in the world (vanilla spawn cap logic). this is specified by ',perchunk' after
   # the comparison operator.
   - mob: five_nights_at_freddycraft:toychica
-    count: '>=1,perchunk'
+    count: { at_least: 1, per: chunk }
 
   # deny mobs from the mod 'mmm' if there are at least 10 of them in the world.
   - mod: mmm
-    count: '>=10'
+    count: { at_least: 10 }
 
   # deny all mobs if there are at least 100 already in the world
-  - count: '>=100'
+  - count: { at_least: 100 }
 
 # 'check_spawn' lets you allow/deny mob spawns.
 # this event fires **after** the 'join' event, so if a mob was denied there, it won't end up here.
@@ -25,8 +25,8 @@ check_spawn:
   # otherwise deny the spawn.
   - for:
       mod: [grimoireofgaia, muchmorespiders]
-      health: '>=20'
-    if: {random: 0.25}
+      health: { at_least: 20 }
+    if: { random: 0.25 }
     then: default
     else: deny
 
@@ -43,9 +43,9 @@ check_spawn:
         lycanitesmobs: [necrovore, gnekk, cacodemon, astaroth, trite, belph, pinky, behemoth, vorach, archvile]
     if:
       random: 0.05
-      light: [0, 7]
-      height: '<=192'
-      count: '<=10,perchunk'
+      light: { between: [0, 7] }
+      height: { at_most: 192 }
+      count: { at_most: 10, per: chunk }
     then: allow
     else: deny
 
@@ -53,7 +53,7 @@ check_spawn:
   # if it has at least 30 HP,
   # allow the spawn at a 60% chance.
   - if:
-      health: '>=30'
+      health: { at_least: 30 }
       random: 0.6
     then: allow
 

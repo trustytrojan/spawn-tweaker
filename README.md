@@ -3,57 +3,48 @@ Spawn Tweaker is a Forge 1.12.2 mod allowing you to change the spawn weight and 
 
 ## In-Game Commands
 
-- `/spawntweaker import`
-  - Reloads the spawn configuration from the `spawn_tweaker` directory.
+- `/spawntweaker reload`
+  - Reloads the spawn configuration from `config/spawn_tweaker.yml`.
   - Use this after editing your spawn configuration to apply changes without restarting the game.
-  - **Note:** On Minecraft startup, the mod will automatically import spawn data from `monster_spawns.yml` (YAML only).
-
-- `/spawntweaker export <glob> [<glob> ...]`
-  - Exports current spawn data for entities matching the provided glob patterns to `spawn_tweaker/monster_spawns_export.yml`.
   - Examples:
-    - `/spawntweaker export *` - Exports spawn data for ALL registered monster entities.
-    - `/spawntweaker export mod1:*` - Exports only monsters from the mod `mod1`.
-    - `/spawntweaker export thermalfoundation:* enderzoo:enderminy` - Exports Thermal Foundation mobs and the specific Enderminy entity.
-  - You should use the exported spawn data as a starting point to decide what to write for your configuration.
+    - `/spawntweaker reload` - Reloads configuration from `config/spawn_tweaker.yml` and reapplies the configured spawn rules.
+    - `/spawntweaker killall` - Removes all monsters from active worlds.
+  - Use `config/spawn_tweaker.yml` and `examples/prototype-v2.yml` as references when editing your configuration.
   
-    Note: The exported YAML uses an entity-centric layout intended for human browsing or copying into a config; this export format is NOT a valid importable configuration. Use exported data only as a reference when editing `monster_spawns.yml`.
+    Note: The export feature has been removed. Use `config/spawn_tweaker.yml` and `examples/prototype-v2.yml` as references when editing your configuration.
 
 ## Configuration Files
 
 Spawn Tweaker supports **YAML** (`.yml`) format. YAML is recommended for its readability.
 
 ### File Location
-Configuration files are located in the `spawn_tweaker` folder in your game directory:
-- `monster_spawns.yml` (preferred)
+Configuration files are located in the `config` folder in your game directory:
+- `spawn_tweaker.yml` (preferred)
 
 ### YAML Format (Recommended)
 *Please remember that in YAML leading whitespace **is** significant. **Do not** report parse errors as issues.*
 
-**Structure:**
+**Structure (new prototype-v2 format):**
 ```yaml
 # Rule 1
-- for:
-    entities:
-      - modid:entity_name
-      - modX:* # Matches all entities in modX
-    biomes:
-      - minecraft:plains
-      - biomesoplenty:* # Matches all biomes in biomesoplenty
+- mobs:
+    - modid:entity_name
+    - modX:* # Matches all entities in modX
+  biomes:
+    - minecraft:plains
+    - biomesoplenty:* # Matches all biomes in biomesoplenty
   spawn:
     weight: 100
-    minGroupSize: 4
-    maxGroupSize: 4
+    group_size: [4, 4]
 
 # Rule 2
-- for:
-    entities:
-      - another_mod:creature
-    biomes:
-      - '*' # Matches ALL biomes registered to Forge
+- mobs:
+    - another_mod:creature
+  biomes:
+    - '*' # Matches ALL biomes registered to Forge
   spawn:
     weight: 50
-    minGroupSize: 1
-    maxGroupSize: 3
+    group_size: [1, 3]
 ```
 
 <!-- JSON support removed; YAML is the preferred format. -->
@@ -90,15 +81,14 @@ Here's a YAML example that sets all Five Nights at Freddycraft entities to spawn
 This configuration should yield output similar to the following in your logs upon startup:
 ```
 [Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Importing monster spawn data...
-[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.YamlHandler]: Loaded 1 spawn rules from YAML: monster_spawns.yml
+[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.YamlHandler]: Loaded 1 spawn rules from YAML: spawn_tweaker.yml
 [Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Rule #1 applied for 62 entities in 1 biomes
-[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Monster spawn data imported successfully
+[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Configuration applied successfully
 ```
 
 ### Notes
 
 - **Pattern Matching**: Both entity and biome fields support glob patterns using `*` (matches any characters) and `?` (matches single character).
 - **Multiple Rules**: You can define multiple rules to configure different entities & biomes with different spawn settings.
- - **Auto-Detection**: On import, the mod reads `monster_spawns.yml` (YAML only).
- - **Export**: The export command generates `monster_spawns_export.yml` for your convenience.
+-- **Auto-Reload**: On startup, the mod reads `config/spawn_tweaker.yml` (YAML only).
 - **Validation**: If a pattern matches no entities or no biomes, the entry is skipped and a warning is logged.

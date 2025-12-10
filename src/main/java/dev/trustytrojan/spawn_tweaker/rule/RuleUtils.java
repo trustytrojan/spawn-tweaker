@@ -1,6 +1,8 @@
-package dev.trustytrojan.spawn_tweaker;
+package dev.trustytrojan.spawn_tweaker.rule;
 
 import java.util.regex.Pattern;
+
+import dev.trustytrojan.spawn_tweaker.GlobUtils;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.world.World;

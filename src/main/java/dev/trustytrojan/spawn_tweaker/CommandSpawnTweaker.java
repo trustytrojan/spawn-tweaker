@@ -1,6 +1,5 @@
 package dev.trustytrojan.spawn_tweaker;
 
-import java.util.Arrays;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
@@ -19,7 +18,7 @@ public class CommandSpawnTweaker extends CommandBase
 	@Override
 	public String getUsage(final ICommandSender sender)
 	{
-		return "/spawntweaker import | /spawntweaker export <glob> [<glob> ...]";
+		return "/spawntweaker reload | /spawntweaker killall";
 	}
 
 	@Override
@@ -27,29 +26,16 @@ public class CommandSpawnTweaker extends CommandBase
 	{
 		if (args.length < 1)
 		{
-			sender.sendMessage(new TextComponentString("Usage: /spawntweaker import | /spawntweaker export <modid>"));
+			sender.sendMessage(new TextComponentString("Usage: /spawntweaker reload | /spawntweaker killall"));
 			return;
 		}
 
 		switch (args[0].toLowerCase())
 		{
-		case "import" ->
+		case "reload" ->
 		{
-			SpawnTweaker.importMonsterSpawnData();
-			sender.sendMessage(new TextComponentString("Monster spawn data imported."));
-		}
-
-		case "export" ->
-		{
-			if (args.length < 2)
-			{
-				sender.sendMessage(new TextComponentString("Usage: /spawntweaker export <glob> [<glob> ...]"));
-				return;
-			}
-			final var patterns = Arrays.asList(Arrays.copyOfRange(args, 1, args.length));
-			SpawnTweaker.exportMonsterSpawnData(patterns);
-			sender.sendMessage(
-				new TextComponentString("Monster spawn data exported for patterns: " + String.join(", ", patterns)));
+			SpawnTweaker.loadConfiguration();
+			sender.sendMessage(new TextComponentString("Configuration reloaded from config/spawn_tweaker.yml."));
 		}
 
 		case "killall" ->
