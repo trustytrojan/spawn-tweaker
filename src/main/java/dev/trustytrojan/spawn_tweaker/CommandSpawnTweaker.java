@@ -34,8 +34,9 @@ public class CommandSpawnTweaker extends CommandBase
 		{
 		case "reload" ->
 		{
-			SpawnTweaker.loadConfiguration();
-			sender.sendMessage(new TextComponentString("Configuration reloaded from config/spawn_tweaker.yml."));
+			SpawnRuleManager.reload();
+			SpawnEntryManager.reload();
+			sender.sendMessage(new TextComponentString("Configuration reloaded."));
 		}
 
 		case "killall" ->

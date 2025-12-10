@@ -1,0 +1,36 @@
+# for mobs from mods 'grimoireofgaia' and 'muchmorespiders' with at least 20 HP,
+# let vanilla decide the spawn at a 25% chance,
+# otherwise deny the spawn.
+- for:
+    mods: [grimoireofgaia, muchmorespiders]
+    health: { at_least: 20 }
+  if: { random: 0.25 }
+  then: default
+  else: deny
+
+# for the specified 'lycanitesmobs' mobs in dimension 5,
+# at a 5% chance (this is checked **before** the below conditions!),
+# if the light level of the block it is spawning on is between 0 and 7 (inclusive),
+# and the height of the spawn block is <= 192,
+# and there are at most 10 of them "per chunk",
+# allow the spawn,
+# otherwise deny it.
+- for:
+    dimension: 5
+    mobs:
+      lycanitesmobs: [necrovore, gnekk, cacodemon, astaroth, trite, belph, pinky, behemoth, vorach, archvile]
+  if:
+    random: 0.05
+    light: { between: [0, 7] }
+    height: { at_most: 192 }
+    count: { at_most: 10, per: chunk }
+  then: allow
+  else: deny
+
+# for **all** mobs (because there is no 'for' clause),
+# if it has at least 30 HP,
+# allow the spawn at a 60% chance.
+- if:
+    health: { at_least: 30 }
+    random: 0.6
+  then: allow

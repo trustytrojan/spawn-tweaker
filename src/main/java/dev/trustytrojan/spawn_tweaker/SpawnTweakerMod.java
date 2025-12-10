@@ -1,5 +1,6 @@
 package dev.trustytrojan.spawn_tweaker;
 
+import java.io.File;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -17,11 +18,27 @@ import org.apache.logging.log4j.Logger;
 public class SpawnTweakerMod
 {
 	private static Logger logger;
+	private static File configDir;
 
 	@EventHandler
 	public void preInit(final FMLPreInitializationEvent event)
 	{
 		logger = event.getModLog();
+		configDir = event.getModConfigurationDirectory();
+	}
+
+	@EventHandler
+	public void postInit(final FMLPostInitializationEvent event)
+	{
+		// Register the event handler
+		MinecraftForge.EVENT_BUS.register(new ForgeEventHandler());
+
+		// Load the config
+		SpawnRuleManager.load(new File(configDir, "check-spawn.yml"));
+		SpawnEntryManager.init();
+		SpawnEntryManager.load(new File(configDir, "spawn-entries.yml"));
+
+		logger.info("Registered SpawnEventHandler and loaded config");
 	}
 
 	@EventHandler
@@ -29,16 +46,5 @@ public class SpawnTweakerMod
 	{
 		event.registerServerCommand(new CommandSpawnTweaker());
 		logger.info("Registered /spawntweaker command");
-	}
-
-	@EventHandler
-	public void postInit(final FMLPostInitializationEvent event)
-	{
-		// We init here because at this point any mods that register
-		// entities/biomes during init phase 2 will be finished.
-		SpawnTweaker.init();
-		// Register our global event handler so we can cancel spawns on join
-		MinecraftForge.EVENT_BUS.register(new ForgeEventHandler());
-		logger.info("Registered ForgeEventHandler on the Forge event bus");
 	}
 }

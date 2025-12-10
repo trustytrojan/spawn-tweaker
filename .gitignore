@@ -4,3 +4,5 @@ run
 *.sh
 bin
 incontrol-examples
+prompt.txt
+prompt.md

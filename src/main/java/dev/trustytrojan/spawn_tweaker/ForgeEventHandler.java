@@ -1,42 +1,30 @@
 package dev.trustytrojan.spawn_tweaker;
 
-import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.monster.IMob;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.LivingSpawnEvent;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
+import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class ForgeEventHandler
 {
-	private static final Logger logger = LogManager.getLogger();
+    @SubscribeEvent
+    public void onCheckSpawn(final CheckSpawn event)
+    {
+        // 1. Create the simplified context wrapper
+        final var context = new SpawnContext(event);
 
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public void onEntityJoinWorld(final EntityJoinWorldEvent event)
-	{
-		final var el = (EntityLiving) event.getEntity();
+        // 2. Iterate through our compiled rules
+        for (final var rule : SpawnRuleManager.getRules())
+        {
+            // 3. Evaluate the rule
+            final var result = rule.evaluate(context); // 4. If the rule returned a definitive result, apply it and stop
+            if (result != null)
+            {
+                // In Forge 1.12.2, ALLOW forces spawn, DENY stops it, DEFAULT lets vanilla handle it.
+                event.setResult(result);
+                return;
+            }
 
-		// filter to only monsters, only run this on a server
-		if (!(el instanceof IMob) || event.getWorld().isRemote)
-			return;
-
-		// Check spawn rules tied to 'on_join'
-		final var allow = SpawnTweaker.shouldAllowOnJoin(event);
-		if (!allow)
-		{
-			// Canceling the event prevents the entity from being added to the world
-			event.setCanceled(true);
-		}
-
-		logger.debug("on_join: spawn {} for entity=\"{}\" ({})", allow ? "allowed" : "canceled", el.getName(),
-			el.getClass().getName());
-	}
-
-	@SubscribeEvent(priority = EventPriority.LOWEST)
-	public void onEntitySpawnEvent(LivingSpawnEvent.CheckSpawn event)
-	{
-		SpawnTweaker.checkSpawn(event);
-	}
+            // If result was null, the rule conditions weren't met (and no 'else' clause existed),
+            // so we continue to the next rule in the list.
+        }
+    }
 }
