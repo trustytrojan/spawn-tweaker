@@ -93,6 +93,7 @@ public class CompiledRule
 			final var rng = new Random();
 			checks.add(ctx -> rng.nextFloat() < chance);
 		}
+
 		if (c.count != null)
 			checks.add(ctx -> checkCount(c.count, ctx));
 	}

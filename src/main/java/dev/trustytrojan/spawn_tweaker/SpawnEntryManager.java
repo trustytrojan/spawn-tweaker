@@ -1,7 +1,6 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -9,9 +8,7 @@ import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.yaml.snakeyaml.Yaml;
 
-import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import dev.trustytrojan.spawn_tweaker.data.SpawnEntryRaw;
@@ -39,33 +36,15 @@ public class SpawnEntryManager
 	public static void load(final File configFile)
 	{
 		lastConfigFile = configFile;
-		final var gson = new Gson();
-		final var yaml = new Yaml();
 
-		try (final var ios = new FileInputStream(configFile))
+		final List<SpawnEntryRaw> rawEntries = ConfigLoader.loadListFromYaml(
+			configFile,
+			new TypeToken<List<SpawnEntryRaw>>() {}.getType(),
+			e -> logger.error("Failed to load spawn entries", e));
+
+		if (!rawEntries.isEmpty())
 		{
-			// 1. YAML -> Generic Java Objects
-			final var loaded = yaml.load(ios);
-			if (loaded == null)
-				return;
-
-			// 2. Generic Java Objects -> Gson Tree
-			final var jsonTree = gson.toJsonTree(loaded);
-
-			// 3. Gson Tree -> Raw POJOs
-			final List<SpawnEntryRaw> rawEntries =
-				gson.fromJson(jsonTree, new TypeToken<List<SpawnEntryRaw>>() {}.getType());
-
-			// 4. Apply entries
-			if (rawEntries != null)
-			{
-				applyEntries(rawEntries);
-			}
-
-		}
-		catch (final Exception e)
-		{
-			logger.error("Failed to load spawn entries", e);
+			applyEntries(rawEntries);
 		}
 	}
 
@@ -152,9 +131,11 @@ public class SpawnEntryManager
 				final var minGroup = entry.group_size.get(0);
 				final var maxGroup = entry.group_size.get(1);
 
-				EntityRegistry.addSpawn(entityClass, entry.weight, minGroup, maxGroup, EnumCreatureType.MONSTER,
-					biomesForEntity);
-				logger.info("Applied spawn entry for {} in {} biomes", entityClass.getSimpleName(),
+				EntityRegistry
+					.addSpawn(entityClass, entry.weight, minGroup, maxGroup, EnumCreatureType.MONSTER, biomesForEntity);
+				logger.info(
+					"Applied spawn entry for {} in {} biomes",
+					entityClass.getSimpleName(),
 					biomesForEntity.length);
 			}
 		}
