@@ -10,9 +10,10 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.apache.logging.log4j.Logger;
 
 @Mod(
-	modid = "spawn_tweaker",
-	name = "Spawn Tweaker",
-	version = "1.1.1",
+	modid = "${mod_id}",
+	name = "${mod_name}",
+	version = "${mod_version}",
+	// does not depend on clients, so accept any version
 	acceptableRemoteVersions = "*"
 )
 public class SpawnTweakerMod

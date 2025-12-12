@@ -1,42 +1,35 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.google.gson.reflect.TypeToken;
 
 import dev.trustytrojan.spawn_tweaker.data.SpawnRuleRaw;
 
 public class SpawnRuleManager
 {
 	private static final Logger logger = LogManager.getLogger();
-	private static final List<CompiledRule> activeRules = new ArrayList<>();
+	private static List<CompiledRule> activeRules;
 	private static File lastConfigFile;
 
 	public static void load(final File configFile)
 	{
 		lastConfigFile = configFile;
-		activeRules.clear();
-
-		final List<SpawnRuleRaw> rawRules = ConfigLoader.loadListFromYaml(
-			configFile,
-			new TypeToken<List<SpawnRuleRaw>>() {}.getType(),
-			e -> logger.error("Failed to load spawn rules", e));
-
-		for (final var raw : rawRules)
-			activeRules.add(new CompiledRule(raw));
+		activeRules = YamlLoader
+			.loadListFromYaml(configFile, SpawnRuleRaw.class, e -> logger.error("Failed to load spawn rules", e))
+			.stream()
+			.map(CompiledRule::new)
+			.collect(Collectors.toList());
+		logger.info("Rules loaded!");
 	}
 
 	public static void reload()
 	{
 		if (lastConfigFile != null)
-		{
 			load(lastConfigFile);
-		}
 	}
 
 	public static List<CompiledRule> getRules()

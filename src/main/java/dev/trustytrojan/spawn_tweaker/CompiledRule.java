@@ -44,25 +44,13 @@ public class CompiledRule
 
 	private static void bake(final ConditionsRaw c, final List<Predicate<SpawnContext>> checks)
 	{
-		// Single mod
-		if (c.mod != null)
-			checks.add(ctx -> c.mod.equals(ctx.getEntityRl().getNamespace()));
-
-		// Multiple mods
+		// Mods = namespace part of resource location string
+		// Mobs = path part of resource location string
+		// Prefer plural over singular checks, prefer mod over mob checks
 		if (c.mods != null)
 			checks.add(ctx -> c.mods.contains(ctx.getEntityRl().getNamespace()));
-
-		// Single mob
-		if (c.mob != null)
-			checks.add(ctx -> c.mob.equals(ctx.getEntityRl().getPath()));
-
-		// Multiple mobs
-		if (c.mobs instanceof List)
-		{
-			@SuppressWarnings("unchecked")
-			final var mobs = (List<String>) c.mobs;
-			checks.add(ctx -> mobs.contains(ctx.getEntityRl().toString()));
-		}
+		else if (c.mod != null)
+			checks.add(ctx -> c.mod.equals(ctx.getEntityRl().getNamespace()));
 		else if (c.mobs instanceof Map)
 		{
 			@SuppressWarnings("unchecked")
@@ -74,6 +62,14 @@ public class CompiledRule
 				return mobs.contains(rl.getPath());
 			});
 		}
+		else if (c.mobs instanceof List)
+		{
+			@SuppressWarnings("unchecked")
+			final var mobs = (List<String>) c.mobs;
+			checks.add(ctx -> mobs.contains(ctx.getEntityRl().toString()));
+		}
+		else if (c.mob != null)
+			checks.add(ctx -> c.mob.equals(ctx.getEntityRl().getPath()));
 
 		if (c.dimension != null)
 			checks.add(ctx -> ctx.getDimension() == c.dimension);
@@ -89,9 +85,8 @@ public class CompiledRule
 
 		if (c.random != null)
 		{
-			final var chance = c.random;
 			final var rng = new Random();
-			checks.add(ctx -> rng.nextFloat() < chance);
+			checks.add(ctx -> rng.nextFloat() < c.random);
 		}
 
 		if (c.count != null)

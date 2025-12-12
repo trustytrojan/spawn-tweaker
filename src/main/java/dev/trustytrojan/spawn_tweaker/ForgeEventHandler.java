@@ -8,6 +8,10 @@ public class ForgeEventHandler
     @SubscribeEvent
     public void onCheckSpawn(final CheckSpawn event)
     {
+        final var rules = SpawnRuleManager.getRules();
+        if (rules == null)
+            return;
+
         // 1. Create the simplified context wrapper
         final var context = new SpawnContext(event);
 
