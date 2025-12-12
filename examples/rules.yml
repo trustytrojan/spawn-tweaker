@@ -1,3 +1,8 @@
+# never let zombies join the world.
+- on: join
+  if: { mob: minecraft:zombie }
+  then: deny
+
 # for mobs from mods 'grimoireofgaia' and 'muchmorespiders' with at least 20 HP,
 # let vanilla decide the spawn at a 25% chance,
 # otherwise deny the spawn.

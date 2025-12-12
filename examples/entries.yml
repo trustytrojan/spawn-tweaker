@@ -1,0 +1,29 @@
+# Multiple mods
+- mods: [lycanitesmobs, mmsr]
+  biomes: [minecraft:*]
+  weight: 1
+  group_size: [1, 1]
+
+# Single mod
+- mod: mmm
+  weight: 1
+  group_size: [1, 1]
+
+# Multiple mobs in an object with entries of the form "modid: [entity names...]"
+- mobs:
+    minecraft: [zombie, creeper]
+    five_nights_at_freddycraft: [toychica]
+  weight: 1000
+  group_size: [10, 20]
+
+# Multiple mobs in a list of "modid:entity" strings
+- mobs:
+    - minecraft:spider
+    - minecraft:silverfish
+  weight: 2000
+  group_size: [5, 15]
+
+# Single mob
+- mob: minecraft:skeleton
+  weight: 1
+  group_size: [100, 200]

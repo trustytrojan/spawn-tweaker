@@ -12,17 +12,20 @@ import dev.trustytrojan.spawn_tweaker.data.CountRaw;
 import dev.trustytrojan.spawn_tweaker.data.RangeRaw;
 import dev.trustytrojan.spawn_tweaker.data.SpawnRuleRaw;
 import net.minecraft.entity.Entity;
+import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
-public class CompiledRule
+public class CompiledRule<E extends EntityEvent>
 {
-	private final List<Predicate<SpawnContext>> selectorChecks = new ArrayList<>();
-	private final List<Predicate<SpawnContext>> conditionChecks = new ArrayList<>();
+	private final boolean onJoin;
+	private final List<Predicate<EntityEventWrapper<E>>> selectorChecks = new ArrayList<>();
+	private final List<Predicate<EntityEventWrapper<E>>> conditionChecks = new ArrayList<>();
 	private final Event.Result thenResult;
 	private final Event.Result elseResult;
 
 	public CompiledRule(final SpawnRuleRaw raw)
 	{
+		onJoin = (raw.on != null) && raw.on.equals("join");
 		this.thenResult = parseResult(raw.then);
 		this.elseResult = parseResult(raw.elseAction);
 
@@ -31,6 +34,11 @@ public class CompiledRule
 			bake(raw.forParams, selectorChecks);
 		if (raw.ifParams != null)
 			bake(raw.ifParams, conditionChecks);
+	}
+
+	public boolean isOnJoin()
+	{
+		return onJoin;
 	}
 
 	private Event.Result parseResult(final String action)
@@ -42,7 +50,7 @@ public class CompiledRule
 		return Event.Result.DEFAULT; // Pass logic to next rule or vanilla
 	}
 
-	private static void bake(final ConditionsRaw c, final List<Predicate<SpawnContext>> checks)
+	private void bake(final ConditionsRaw c, final List<Predicate<EntityEventWrapper<E>>> checks)
 	{
 		// Mods = namespace part of resource location string
 		// Mobs = path part of resource location string
@@ -78,7 +86,7 @@ public class CompiledRule
 			checks.add(ctx -> checkRange(c.light, ctx.getLightLevel()));
 
 		if (c.height != null)
-			checks.add(ctx -> checkRange(c.height, (int) ctx.getY()));
+			checks.add(ctx -> checkRange(c.height, ctx.getHeight()));
 
 		if (c.health != null)
 			checks.add(ctx -> checkRange(c.health, (int) ctx.getEntity().getMaxHealth()));
@@ -93,7 +101,7 @@ public class CompiledRule
 			checks.add(ctx -> checkCount(c.count, ctx));
 	}
 
-	private static boolean checkCount(final CountRaw count, final SpawnContext ctx)
+	private boolean checkCount(final CountRaw count, final EntityEventWrapper<E> ctx)
 	{
 		final Collection<Entity> entities;
 
@@ -135,7 +143,7 @@ public class CompiledRule
 	 * The master method called every tick. Returns NULL if the rule doesn't match (logic flows to next rule). Returns
 	 * ALLOW/DENY/DEFAULT if the rule matches.
 	 */
-	public Event.Result evaluate(final SpawnContext ctx)
+	public Event.Result evaluate(final EntityEventWrapper<E> ctx)
 	{
 		for (final var check : selectorChecks)
 		{

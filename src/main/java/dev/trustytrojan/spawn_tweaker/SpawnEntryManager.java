@@ -14,8 +14,6 @@ import java.util.stream.StreamSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.google.gson.internal.LinkedTreeMap;
-
 import dev.trustytrojan.spawn_tweaker.data.SpawnEntryRaw;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EnumCreatureType;
@@ -47,6 +45,8 @@ public class SpawnEntryManager
 
 		for (var i = 0; i < entries.size(); ++i)
 			applyEntry(i + 1, entries.get(i));
+
+		logger.info("Entries applied!");
 	}
 
 	public static void reload()

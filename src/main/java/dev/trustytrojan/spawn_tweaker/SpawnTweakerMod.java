@@ -34,12 +34,15 @@ public class SpawnTweakerMod
 		// Register the event handler
 		MinecraftForge.EVENT_BUS.register(new ForgeEventHandler());
 
-		// Load the config
-		SpawnRuleManager.load(new File(configDir, "check-spawn.yml"));
-		SpawnEntryManager.init();
-		SpawnEntryManager.load(new File(configDir, "spawn-entries.yml"));
+		// Ensure mod config subdir
+		final File modConfigDir = new File(configDir, "spawn_tweaker");
+		if (!modConfigDir.exists())
+			modConfigDir.mkdirs();
 
-		logger.info("Registered SpawnEventHandler and loaded config");
+		// Load the config from (minecraft config dir)/spawn_tweaker/
+		SpawnRuleManager.load(new File(modConfigDir, "rules.yml"));
+		SpawnEntryManager.init();
+		SpawnEntryManager.load(new File(modConfigDir, "entries.yml"));
 	}
 
 	@EventHandler
