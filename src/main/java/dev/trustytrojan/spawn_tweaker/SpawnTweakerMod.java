@@ -1,13 +1,15 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
+
+import org.apache.logging.log4j.Logger;
+
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import org.apache.logging.log4j.Logger;
 
 @Mod(
 	modid = "${mod_id}",
@@ -41,7 +43,6 @@ public class SpawnTweakerMod
 
 		// Load the config from (minecraft config dir)/spawn_tweaker/
 		SpawnRuleManager.load(new File(modConfigDir, "rules.yml"));
-		SpawnEntryManager.init();
 		SpawnEntryManager.load(new File(modConfigDir, "entries.yml"));
 	}
 

@@ -1,29 +1,69 @@
-# Multiple mods
-- mods: [lycanitesmobs, mmsr]
-  biomes: [minecraft:*]
-  weight: 1
-  group_size: [1, 1]
-
-# Single mod
-- mod: mmm
-  weight: 1
-  group_size: [1, 1]
-
-# Multiple mobs in an object with entries of the form "modid: [entity names...]"
+# Spawn zombies more often and in large packs.
+# This will update the weight/group size in all the biomes that
+# minecraft:zombie was ALREADY registered to spawn in.
+# You NEED to write both a 'weight' and 'group_size' for the entry to apply.
 - mobs:
-    minecraft: [zombie, creeper]
-    five_nights_at_freddycraft: [toychica]
+    minecraft: [zombie]
+  weight: 2000
+  group_size: [5, 10]
+
+# Want to only update/add zombie spawns in SPECIFIC biomes? Write a 'biomes' object.
+# After applying this entry, zombies will now spawn really often in the Plains and in the Nether!
+- mobs:
+    minecraft: [zombie]
+  biomes:
+    minecraft: [plains, hell]
+  weight: 2000
+  group_size: [5, 10]
+
+# Want zombies to ONLY spawn in the Nether? Add 'remove: existing' to what we had before.
+# This REMOVES existing biome spawns before adding our new spawn to minecraft:hell.
+- mobs:
+    minecraft: [zombie]
+  biomes:
+    minecraft: [hell]
+  remove: existing
+  weight: 2000
+  group_size: [5, 10]
+
+# Want to only REMOVE spawns from mobs? Don't specify 'weight' or 'group_size', only 'remove'.
+# All existing biomes are removed here, so spiders will never spawn again.
+- mobs:
+    minecraft: [spider]
+  remove: existing
+
+# Want to only remove spawns from SPECIFIC biomes? Write 'remove: specified'.
+# Creepers will no longer spawn in the desert.
+- mobs:
+    minecraft: [creeper]
+  biomes:
+    minecraft: [desert]
+  remove: specified
+
+# NOTE: It's recommended you do NOT write 'remove: specified' and 'weight'/'group_size' in the same entry.
+
+# Here we set a very high spawn weight and group size for
+# 6 mobs from 3 different mods in 3 biomes.
+- mobs:
+    minecraft: [spider, creeper]
+    five_nights_at_freddycraft: [toychica, nightmarefredbear]
+    techguns: [zombieminer, cyberdemon]
+  biomes:
+    minecraft: [desert, jungle, hell]
   weight: 1000
   group_size: [10, 20]
 
-# Multiple mobs in a list of "modid:entity" strings
+# Need to target ALL mobs or ALL biomes from a mod? Use '*'.
+# This entry sets spawn weight to 1 and only allows 1 to spawn at a time
+# for ALL Lycanites Mobs and ALL Much More Spiders mobs
+# in ALL Minecraft biomes and ALL Biomes 'O Plenty biomes.
 - mobs:
-    - minecraft:spider
-    - minecraft:silverfish
-  weight: 2000
-  group_size: [5, 15]
-
-# Single mob
-- mob: minecraft:skeleton
+    # Match ALL mobs from certain mods by writing '*' instead of a list
+    lycanitesmobs: '*'
+    mmsr: '*'
+  biomes:
+    # Same thing can be done for biomes
+    minecraft: '*'
+    biomesoplenty: '*'
   weight: 1
-  group_size: [100, 200]
+  group_size: [1, 1]

@@ -1,6 +1,7 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,12 +20,19 @@ public class SpawnRuleManager
 	public static void load(final File configFile)
 	{
 		lastConfigFile = configFile;
-		activeRules = YamlLoader
-			.loadListFromYaml(configFile, SpawnRuleRaw.class, e -> logger.error("Failed to load spawn rules", e))
-			.stream()
-			.map(CompiledRule::new)
-			.collect(Collectors.toList());
-		logger.info("Rules loaded!");
+		try
+		{
+			activeRules = YamlLoader
+				.loadListFromYaml(configFile, SpawnRuleRaw.class)
+				.stream()
+				.map(CompiledRule::new)
+				.collect(Collectors.toList());
+			logger.info("Rules loaded!");
+		}
+		catch (final IOException e)
+		{
+			logger.error("Error occurred loading rules: ", e);
+		}
 	}
 
 	public static void reload()

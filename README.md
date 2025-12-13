@@ -1,94 +1,124 @@
 # Spawn Tweaker
-Spawn Tweaker is a Forge 1.12.2 mod allowing you to change the spawn weight and minimum/maximum group size for any modded mobs classifying as monsters in any biomes without needing to deal with tons of different mod configuration files.
+Spawn Tweaker is a successor to [McJty/InControl](https://github.com/McJtyMods/InControl) for Forge 1.12.2, since 1.12.2 was abandoned by the developer.
+
+Spawn Tweaker allows you to:
+  - Modify spawn weight and minimum/maximum group size for any modded mobs classifying as monsters in any biomes
+  - Hot reload spawn entries during world execution
+  - Control mob spawns with a complex rule system
 
 ## In-Game Commands
+Commands can only be run by server operators/admins.
 
 - `/spawntweaker reload`
-  - Reloads the spawn configuration from `config/spawn_tweaker.yml`.
-  - Use this after editing your spawn configuration to apply changes without restarting the game.
-  - Examples:
-    - `/spawntweaker reload` - Reloads configuration from `config/spawn_tweaker.yml` and reapplies the configured spawn rules.
-    - `/spawntweaker killall` - Removes all monsters from active worlds.
-  - Use `config/spawn_tweaker.yml` and `examples/prototype-v2.yml` as references when editing your configuration.
-  
-    Note: The export feature has been removed. Use `config/spawn_tweaker.yml` and `examples/prototype-v2.yml` as references when editing your configuration.
+  - Reloads all files from `config/spawn_tweaker`. This includes both rules and entries.
+
+- `/spawntweaker killall`
+  - *Removes* all monsters from the world, which is quicker and more performant than killing them.
 
 ## Configuration Files
 
-Spawn Tweaker supports **YAML** (`.yml`) format. YAML is recommended for its readability.
+Spawn Tweaker uses **YAML** (`.yml`) files for configuration.
+Configuration files are located in the `config/spawn_tweaker/` folder in your game directory.
 
-### File Location
-Configuration files are located in the `config` folder in your game directory:
-- `spawn_tweaker.yml` (preferred)
+There are two main configuration files:
+1. `entries.yml` - For modifying spawn weights and group sizes of existing spawns.
+2. `rules.yml` - For advanced control logic (allow/deny spawns based on conditions).
 
-### YAML Format (Recommended)
-*Please remember that in YAML leading whitespace **is** significant. **Do not** report parse errors as issues.*
+### 1. Spawn Entries (`entries.yml`)
 
-**Structure (new prototype-v2 format):**
+This file is used to tweak the spawn properties (weight, group size) of mobs that are already registered to spawn in biomes.
+
+**Structure:**
 ```yaml
-# Rule 1
-- mobs:
-    - modid:entity_name
-    - modX:* # Matches all entities in modX
+- mob: minecraft:zombie
   biomes:
     - minecraft:plains
-    - biomesoplenty:* # Matches all biomes in biomesoplenty
-  spawn:
-    weight: 100
-    group_size: [4, 4]
+    - minecraft:forest
+  weight: 100
+  group_size: [4, 4]
 
-# Rule 2
-- mobs:
-    - another_mod:creature
+- mod: lycanitesmobs
   biomes:
-    - '*' # Matches ALL biomes registered to Forge
-  spawn:
-    weight: 50
-    group_size: [1, 3]
+    - '*' # Matches all biomes
+  weight: 10
+  group_size: [1, 3]
 ```
 
-<!-- JSON support removed; YAML is the preferred format. -->
-
-### Configuration Fields
-
-Each rule consists of two sections:
-
-#### `for` Section
-- **entities**: List of entity registry names or glob patterns (e.g., `minecraft:zombie`, `mymod:*`)
-- **biomes**: List of biome registry names or glob patterns (e.g., `minecraft:plains`, `biomesoplenty:*`, `*` for all biomes)
-
-#### `spawn` Section
+**Fields:**
+- **Target Selection** (Use one or more):
+  - `mob`: Single entity registry name (e.g., `minecraft:zombie`).
+  - `mobs`: List of entities or a map of modid to entities.
+  - `mod`: Single mod ID (matches all entities from this mod).
+  - `mods`: List of mod IDs.
+- **biomes**: List of biome registry names. Supports `*` to match all biomes.
 - **weight**: The spawn weight. Higher numbers mean the entity spawns more frequently.
-- **minGroupSize**: The minimum number of entities that spawn in a group.
-- **maxGroupSize**: The maximum number of entities that spawn in a group.
+- **group_size**: A list of two integers `[min, max]` defining the minimum and maximum number of entities per spawn.
 
-### Example Configuration
+### 2. Spawn Rules (`rules.yml`)
 
-Here's a YAML example that sets all Five Nights at Freddycraft entities to spawn with low frequency in all biomes:
+This file allows you to define complex rules to allow or deny spawns based on various conditions.
 
+**Structure:**
 ```yaml
-- for:
-    entities:
-      - five_nights_at_freddycraft:*
-    biomes:
-      - '*'
-  spawn:
-    weight: 1
-    minGroupSize: 1
-    maxGroupSize: 1
+- on: spawn
+  if:
+    mob: minecraft:zombie
+    light:
+      at_least: 12
+  then: deny
 ```
 
-This configuration should yield output similar to the following in your logs upon startup:
-```
-[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Importing monster spawn data...
-[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.YamlHandler]: Loaded 1 spawn rules from YAML: spawn_tweaker.yml
-[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Rule #1 applied for 62 entities in 1 biomes
-[Client thread/INFO] [dev.trustytrojan.spawn_tweaker.SpawnTweaker]: Configuration applied successfully
+**Fields:**
+- **on**: The event to trigger on. Currently supports `spawn` (CheckSpawn) and `join` (EntityJoinWorld). Default is `spawn`.
+- **then**: Action to take if conditions match. Values: `allow`, `deny`, `default`.
+- **else**: Action to take if conditions DO NOT match. Values: `allow`, `deny`, `default`.
+- **for** / **if**: Conditions to check. Both keys work identically.
+
+**Conditions:**
+- `mob` / `mobs` / `mod` / `mods`: Same as in `entries.yml`.
+- `dimension`: Dimension ID (integer).
+- `health`: Range of health (e.g., `at_least: 10`, `between: [10, 20]`).
+- `light`: Range of light level.
+- `height`: Range of Y-coordinate.
+- `random`: Chance (0.0 to 1.0).
+- `count`: Check existing mob counts.
+  - `per`: `chunk` or `world`.
+  - `at_least`, `at_most`, `between`.
+
+**Range Format:**
+Ranges (`health`, `light`, `height`, `count`) can be specified as:
+- `at_least: X`
+- `at_most: X`
+- `between: [Min, Max]`
+
+### Examples
+
+**entries.yml**:
+```yaml
+# Make zombies spawn more often in plains
+- mob: minecraft:zombie
+  biomes:
+    - minecraft:plains
+  weight: 200
+  group_size: [4, 8]
 ```
 
-### Notes
+**rules.yml**:
+```yaml
+# Prevent zombies from spawning in high light levels
+- on: spawn
+  if:
+    mob: minecraft:zombie
+    light:
+      at_least: 12
+  then: deny
 
-- **Pattern Matching**: Both entity and biome fields support glob patterns using `*` (matches any characters) and `?` (matches single character).
-- **Multiple Rules**: You can define multiple rules to configure different entities & biomes with different spawn settings.
--- **Auto-Reload**: On startup, the mod reads `config/spawn_tweaker.yml` (YAML only).
-- **Validation**: If a pattern matches no entities or no biomes, the entry is skipped and a warning is logged.
+# Limit total number of skeletons in the world
+- on: spawn
+  if:
+    mob: minecraft:skeleton
+    count:
+      per: world
+      at_least: 100
+  then: deny
+```
