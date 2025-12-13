@@ -87,7 +87,8 @@ public final class Util
 					streamBuilder.add(Stream.of(entry));
 				}
 			else
-				throw new IllegalArgumentException("Values in selectorTable must be a list of names or the string '*'");
+				throw new IllegalArgumentException(
+					"Values in selectorTable must be a list of names or the string '*'");
 		}
 
 		return streamBuilder.build().flatMap(s -> s);

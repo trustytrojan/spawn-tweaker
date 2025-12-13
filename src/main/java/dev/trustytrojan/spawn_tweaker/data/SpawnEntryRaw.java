@@ -12,7 +12,6 @@ import dev.trustytrojan.spawn_tweaker.Util;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.world.biome.Biome;
-import net.minecraftforge.event.world.WorldEvent.PotentialSpawns;
 import net.minecraftforge.fml.common.registry.EntityEntry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 
@@ -76,7 +75,7 @@ public class SpawnEntryRaw
 
 		if (!canAddSpawn && remove == null)
 		{
-			logger.warn("Entry #{}: NOT applying: weight/group_size/remove missing");
+			logger.warn("Entry #{}: NOT applying: weight/group_size/remove missing", index);
 			return;
 		}
 
@@ -84,7 +83,9 @@ public class SpawnEntryRaw
 		final var biomes = resolveBiomes().toArray(Biome[]::new);
 
 		if (biomes.length == 0)
-			logger.info("Entry #{}: No biomes specified, defaulting to existing entity biomes", index);
+			logger.info(
+				"Entry #{}: No biomes specified, defaulting to existing entity biomes",
+				index);
 
 		for (final var entityClass : Util.iterableStream(resolveEntityClasses()))
 		{
@@ -93,7 +94,11 @@ public class SpawnEntryRaw
 			if (remove.equals("existing") && currentBiomes.length > 0)
 			{
 				EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, currentBiomes);
-				logger.info("Entry #{}: Removed {} existing biomes for {}", index, currentBiomes.length, entityClass);
+				logger.info(
+					"Entry #{}: Removed {} existing biomes for {}",
+					index,
+					currentBiomes.length,
+					entityClass);
 			}
 
 			final var targetBiomes = (biomes.length > 0) ? biomes : currentBiomes;
@@ -107,7 +112,11 @@ public class SpawnEntryRaw
 			if (remove.equals("specified"))
 			{
 				EntityRegistry.removeSpawn(entityClass, EnumCreatureType.MONSTER, targetBiomes);
-				logger.info("Entry #{}: Removed {} specified biomes for {}", index, targetBiomes.length, entityClass);
+				logger.info(
+					"Entry #{}: Removed {} specified biomes for {}",
+					index,
+					targetBiomes.length,
+					entityClass);
 			}
 
 			if (canAddSpawn)
@@ -119,7 +128,11 @@ public class SpawnEntryRaw
 					group_size.get(1),
 					EnumCreatureType.MONSTER,
 					targetBiomes);
-				logger.info("Entry #{}: Added/updated {} biomes for {}", index, targetBiomes.length, entityClass);
+				logger.info(
+					"Entry #{}: Added/updated {} biomes for {}",
+					index,
+					targetBiomes.length,
+					entityClass);
 			}
 		}
 	}

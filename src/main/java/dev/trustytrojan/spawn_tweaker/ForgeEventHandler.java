@@ -9,7 +9,7 @@ public class ForgeEventHandler
     @SubscribeEvent
     public void onCheckSpawn(final CheckSpawn event)
     {
-        final var rules = SpawnRuleManager.getRules();
+        final var rules = SpawnRules.get();
         if (rules == null)
             return;
 
@@ -17,7 +17,7 @@ public class ForgeEventHandler
         final var context = new CheckSpawnWrapper(event);
 
         // 2. Iterate through our compiled rules
-        for (final var rule : SpawnRuleManager.getRules())
+        for (final var rule : SpawnRules.get())
         {
             // 3. Evaluate the rule
             @SuppressWarnings("unchecked")
@@ -39,13 +39,13 @@ public class ForgeEventHandler
     @SubscribeEvent
     public void onJoinWorld(final EntityJoinWorldEvent event)
     {
-        final var rules = SpawnRuleManager.getRules();
+        final var rules = SpawnRules.get();
         if (rules == null)
             return;
 
         final var context = new JoinWorldWrapper(event);
 
-        for (final var rule : SpawnRuleManager.getRules())
+        for (final var rule : SpawnRules.get())
         {
             if (!rule.isOnJoin())
                 continue;

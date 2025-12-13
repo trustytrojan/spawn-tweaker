@@ -22,7 +22,8 @@ public final class YamlLoader
 	private YamlLoader()
 	{}
 
-	public static <T> List<T> loadListFromYaml(final File configFile, final Class<T> elementClass) throws IOException
+	public static <T> List<T> loadListFromYaml(final File configFile, final Class<T> elementClass)
+		throws IOException
 	{
 		try (final var ios = new FileInputStream(configFile))
 		{

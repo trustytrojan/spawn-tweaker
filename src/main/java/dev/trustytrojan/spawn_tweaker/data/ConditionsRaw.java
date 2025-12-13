@@ -15,8 +15,7 @@ public class ConditionsRaw
 	public String mob;
 
 	/**
-	 * Either a {@code List<String>} of {@code modid:entity} strings, or a {@code Map<String, List<String>>} in the
-	 * form:
+	 * Either a {@code List<String>} of {@code modid:entity} strings, or a {@code Map<String, List<String>>} in the form:
 	 * 
 	 * <pre>
 	 * { modid: [entity1, entity2, ...], modid2: [...], ... }

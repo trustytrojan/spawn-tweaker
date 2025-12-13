@@ -9,26 +9,30 @@ import org.apache.logging.log4j.Logger;
 
 import dev.trustytrojan.spawn_tweaker.data.SpawnEntryRaw;
 
-public class SpawnEntryManager
+public class SpawnEntries
 {
 	private static final Logger logger = LogManager.getLogger();
-	private static File lastConfigFile;
+	private static File file;
 
-	public static void load(final File configFile)
+	public static void init(final File configDir)
 	{
-		lastConfigFile = configFile;
+		file = new File(configDir, "entries.yml");
+	}
 
+	public static void load()
+	{
 		try
 		{
-			applyEntries(YamlLoader.loadListFromYaml(configFile, SpawnEntryRaw.class));
+			apply(YamlLoader.loadListFromYaml(file, SpawnEntryRaw.class));
 		}
 		catch (final IOException t)
 		{
 			logger.error("Error occurred loading entries: ", t);
+			return;
 		}
 	}
 
-	public static void applyEntries(final List<SpawnEntryRaw> entries)
+	public static void apply(final List<SpawnEntryRaw> entries)
 	{
 		var i = 1;
 		for (final var entry : entries)
@@ -44,11 +48,5 @@ public class SpawnEntryManager
 			}
 		}
 		logger.info("Entries applied!");
-	}
-
-	public static void reload()
-	{
-		if (lastConfigFile != null)
-			load(lastConfigFile);
 	}
 }

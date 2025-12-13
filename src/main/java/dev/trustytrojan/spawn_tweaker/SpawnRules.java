@@ -11,19 +11,22 @@ import org.apache.logging.log4j.Logger;
 import dev.trustytrojan.spawn_tweaker.data.SpawnRuleRaw;
 import net.minecraftforge.event.entity.EntityEvent;
 
-public class SpawnRuleManager
+public class SpawnRules
 {
 	private static final Logger logger = LogManager.getLogger();
-	private static List<CompiledRule<? extends EntityEvent>> activeRules;
-	private static File lastConfigFile;
+	private static List<CompiledRule<? extends EntityEvent>> rules;
+	private static File file;
 
-	public static void load(final File configFile)
+	public static void init(final File configDir)
 	{
-		lastConfigFile = configFile;
+		file = new File(configDir, "rules.yml");
+	}
+
+	public static void load()
+	{
 		try
 		{
-			activeRules = YamlLoader
-				.loadListFromYaml(configFile, SpawnRuleRaw.class)
+			rules = YamlLoader.loadListFromYaml(file, SpawnRuleRaw.class)
 				.stream()
 				.map(CompiledRule::new)
 				.collect(Collectors.toList());
@@ -35,14 +38,8 @@ public class SpawnRuleManager
 		}
 	}
 
-	public static void reload()
+	public static List<CompiledRule<? extends EntityEvent>> get()
 	{
-		if (lastConfigFile != null)
-			load(lastConfigFile);
-	}
-
-	public static List<CompiledRule<? extends EntityEvent>> getRules()
-	{
-		return activeRules;
+		return rules;
 	}
 }

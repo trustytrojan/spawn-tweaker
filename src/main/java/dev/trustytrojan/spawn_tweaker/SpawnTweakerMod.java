@@ -2,8 +2,6 @@ package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
 
-import org.apache.logging.log4j.Logger;
-
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -20,36 +18,29 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 )
 public class SpawnTweakerMod
 {
-	private static Logger logger;
-	private static File configDir;
-
 	@EventHandler
 	public void preInit(final FMLPreInitializationEvent event)
 	{
-		logger = event.getModLog();
-		configDir = event.getModConfigurationDirectory();
+		final var configDir = new File(event.getModConfigurationDirectory(), "spawn_tweaker");
+		if (!configDir.exists())
+			configDir.mkdir();
+		OriginalEntries.init(configDir);
+		SpawnRules.init(configDir);
+		SpawnEntries.init(configDir);
 	}
 
 	@EventHandler
 	public void postInit(final FMLPostInitializationEvent event)
 	{
-		// Register the event handler
 		MinecraftForge.EVENT_BUS.register(new ForgeEventHandler());
-
-		// Ensure mod config subdir
-		final File modConfigDir = new File(configDir, "spawn_tweaker");
-		if (!modConfigDir.exists())
-			modConfigDir.mkdirs();
-
-		// Load the config from (minecraft config dir)/spawn_tweaker/
-		SpawnRuleManager.load(new File(modConfigDir, "rules.yml"));
-		SpawnEntryManager.load(new File(modConfigDir, "entries.yml"));
+		SpawnRules.load();
+		OriginalEntries.save();
+		SpawnEntries.load();
 	}
 
 	@EventHandler
 	public void serverStarting(final FMLServerStartingEvent event)
 	{
 		event.registerServerCommand(new CommandSpawnTweaker());
-		logger.info("Registered /spawntweaker command");
 	}
 }
