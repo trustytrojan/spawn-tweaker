@@ -1,7 +1,6 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -11,7 +10,6 @@ import dev.trustytrojan.spawn_tweaker.data.ConditionsRaw;
 import dev.trustytrojan.spawn_tweaker.data.CountRaw;
 import dev.trustytrojan.spawn_tweaker.data.RangeRaw;
 import dev.trustytrojan.spawn_tweaker.data.SpawnRuleRaw;
-import net.minecraft.entity.Entity;
 import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
@@ -101,28 +99,34 @@ public class CompiledRule<E extends EntityEvent>
 			checks.add(ctx -> checkCount(c.count, ctx));
 	}
 
+	// Hot code path: DON'T allocate memory, reduce method calls.
 	private boolean checkCount(final CountRaw count, final EntityEventWrapper<E> ctx)
 	{
-		final Collection<Entity> entities;
+		final var targetClass = ctx.getEntity().getClass();
+		var entitiesFound = 0;
 
-		if ("chunk".equalsIgnoreCase(count.per))
+		if (count.per.equalsIgnoreCase("chunk"))
 		{
-			// In 1.12.2, we have to iterate entity lists in the chunk
-			entities = new ArrayList<>();
-			for (final var entityList : ctx.getChunk().getEntityLists())
-				entities.addAll(entityList);
+			final var entityLists = ctx.getChunk().getEntityLists();
+			for (var i = 0; i < entityLists.length; ++i)
+			{
+				// unfortunately need to allocate iterator here,
+				// ClassInheritanceMultiMap doesn't expose the internal list.
+				for (final var entity : entityLists[i])
+				{
+					if (entity.getClass() == targetClass)
+						++entitiesFound;
+				}
+			}
 		}
 		else
 		{
-			// Default to world
-			entities = ctx.getWorld().loadedEntityList;
-		}
-
-		var entitiesFound = 0;
-		for (final var entity : entities)
-		{
-			if (entity.getClass() == ctx.getEntity().getClass())
-				++entitiesFound;
+			final var loadedEntityList = ctx.getWorld().loadedEntityList;
+			for (int i = 0, n = loadedEntityList.size(); i < n; ++i)
+			{
+				if (loadedEntityList.get(i).getClass() == targetClass)
+					++entitiesFound;
+			}
 		}
 
 		return checkRange(count, entitiesFound);
@@ -142,25 +146,23 @@ public class CompiledRule<E extends EntityEvent>
 	/**
 	 * The master method called every tick. Returns NULL if the rule doesn't match (logic flows to next rule). Returns
 	 * ALLOW/DENY/DEFAULT if the rule matches.
+	 * 
+	 * Hot code path: DON'T allocate memory and reduce method calls.
 	 */
 	public Event.Result evaluate(final EntityEventWrapper<E> ctx)
 	{
-		for (final var check : selectorChecks)
+		for (int i = 0, n = selectorChecks.size(); i < n; ++i)
 		{
-			if (!check.test(ctx))
-				// Selector failed, so this rule does not apply at all.
+			if (!selectorChecks.get(i).test(ctx))
 				return null;
 		}
 
-		for (final var check : conditionChecks)
+		for (int i = 0, n = conditionChecks.size(); i < n; ++i)
 		{
-			if (!check.test(ctx))
-				// Condition failed. If we have an 'else' clause, return that.
-				// Otherwise, return null (treat as if rule didn't apply).
+			if (!conditionChecks.get(i).test(ctx))
 				return (elseResult != Event.Result.DEFAULT) ? elseResult : null;
 		}
 
-		// All checks passed
 		return thenResult;
 	}
 }
