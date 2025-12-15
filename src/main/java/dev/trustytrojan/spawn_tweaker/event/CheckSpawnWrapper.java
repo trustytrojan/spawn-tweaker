@@ -1,4 +1,4 @@
-package dev.trustytrojan.spawn_tweaker;
+package dev.trustytrojan.spawn_tweaker.event;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;

@@ -1,4 +1,4 @@
-package dev.trustytrojan.spawn_tweaker;
+package dev.trustytrojan.spawn_tweaker.event;
 
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.ResourceLocation;
@@ -6,6 +6,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.event.entity.EntityEvent;
+import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 
 public abstract class EntityEventWrapper<E extends EntityEvent>
@@ -15,6 +16,11 @@ public abstract class EntityEventWrapper<E extends EntityEvent>
 	protected EntityEventWrapper(final E event)
 	{
 		this.event = event;
+	}
+
+	public void setResult(final Result result)
+	{
+		event.setResult(result);
 	}
 
 	public abstract World getWorld();

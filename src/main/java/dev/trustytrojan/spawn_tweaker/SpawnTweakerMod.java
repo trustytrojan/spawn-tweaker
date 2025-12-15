@@ -2,6 +2,7 @@ package dev.trustytrojan.spawn_tweaker;
 
 import java.io.File;
 
+import dev.trustytrojan.spawn_tweaker.event.ForgeEventSubscriber;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.Mod.EventHandler;
@@ -32,7 +33,7 @@ public class SpawnTweakerMod
 	@EventHandler
 	public void postInit(final FMLPostInitializationEvent event)
 	{
-		MinecraftForge.EVENT_BUS.register(new ForgeEventHandler());
+		MinecraftForge.EVENT_BUS.register(new ForgeEventSubscriber());
 		SpawnRules.load();
 		OriginalEntries.save();
 		SpawnEntries.load();

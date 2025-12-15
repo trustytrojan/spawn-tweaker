@@ -1,8 +1,9 @@
 # v1.2.0
-- Removed JSON support
-- Changed YAML structure to allow for `on_join` object
-- Added `on_join` object to control mob joining events
+- Removed JSON
+- Added rule evaluation system inspired by In Control! for spawn events
 - Migrated build system to Cleanroom's template
+- Separated spawn rules and potential spawn modifications to different YAML files
+- Added the saving of "original spawn entries" before Spawn Tweaker's changes, allowing the user to restore potential spawns to their original state
 
 # v1.1.1
 - Embedded YAML library into JAR (since I forgot)

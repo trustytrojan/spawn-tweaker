@@ -2,20 +2,20 @@ package dev.trustytrojan.spawn_tweaker;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import dev.trustytrojan.spawn_tweaker.data.ConditionsRaw;
 import dev.trustytrojan.spawn_tweaker.data.CountRaw;
 import dev.trustytrojan.spawn_tweaker.data.RangeRaw;
 import dev.trustytrojan.spawn_tweaker.data.SpawnRuleRaw;
+import dev.trustytrojan.spawn_tweaker.event.EntityEventWrapper;
 import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 public class CompiledRule<E extends EntityEvent>
 {
-	private final boolean onJoin;
 	private final List<Predicate<EntityEventWrapper<E>>> selectorChecks = new ArrayList<>();
 	private final List<Predicate<EntityEventWrapper<E>>> conditionChecks = new ArrayList<>();
 	private final Event.Result thenResult;
@@ -23,7 +23,6 @@ public class CompiledRule<E extends EntityEvent>
 
 	public CompiledRule(final SpawnRuleRaw raw)
 	{
-		onJoin = (raw.on != null) && raw.on.equals("join");
 		this.thenResult = parseResult(raw.then);
 		this.elseResult = parseResult(raw.elseAction);
 
@@ -32,11 +31,6 @@ public class CompiledRule<E extends EntityEvent>
 			bake(raw.forParams, selectorChecks);
 		if (raw.ifParams != null)
 			bake(raw.ifParams, conditionChecks);
-	}
-
-	public boolean isOnJoin()
-	{
-		return onJoin;
 	}
 
 	private Event.Result parseResult(final String action)
@@ -50,32 +44,11 @@ public class CompiledRule<E extends EntityEvent>
 
 	private void bake(final ConditionsRaw c, final List<Predicate<EntityEventWrapper<E>>> checks)
 	{
-		// Mods = namespace part of resource location string
-		// Mobs = path part of resource location string
-		// Prefer plural over singular checks, prefer mod over mob checks
-		if (c.mods != null)
-			checks.add(ctx -> c.mods.contains(ctx.getEntityRl().getNamespace()));
-		else if (c.mod != null)
-			checks.add(ctx -> c.mod.equals(ctx.getEntityRl().getNamespace()));
-		else if (c.mobs instanceof Map)
+		if (c.mobs != null)
 		{
-			@SuppressWarnings("unchecked")
-			final var modToMobs = (Map<String, List<String>>) c.mobs;
-			checks.add(ctx ->
-			{
-				final var rl = ctx.getEntityRl();
-				final var mobs = modToMobs.get(rl.getNamespace());
-				return mobs.contains(rl.getPath());
-			});
+			final var mobs = Util.resolveEntityClasses(c.mobs).collect(Collectors.toSet());
+			checks.add(ctx -> mobs.contains(ctx.getEntity().getClass()));
 		}
-		else if (c.mobs instanceof List)
-		{
-			@SuppressWarnings("unchecked")
-			final var mobs = (List<String>) c.mobs;
-			checks.add(ctx -> mobs.contains(ctx.getEntityRl().toString()));
-		}
-		else if (c.mob != null)
-			checks.add(ctx -> c.mob.equals(ctx.getEntityRl().getPath()));
 
 		if (c.dimension != null)
 			checks.add(ctx -> ctx.getDimension() == c.dimension);

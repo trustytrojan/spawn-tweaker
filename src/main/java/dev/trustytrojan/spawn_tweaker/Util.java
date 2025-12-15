@@ -3,6 +3,7 @@ package dev.trustytrojan.spawn_tweaker;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
@@ -22,7 +23,12 @@ public final class Util
 	private static final Logger logger = LogManager.getLogger();
 
 	/**
-	 * <b>This terminates the stream!!!!!!!!</b>
+	 * @param <T>    Type of stream element
+	 * @param stream The stream to consume
+	 * @return An {@link Iterable} using the provided stream's iterator.
+	 * @see {@link Stream#iterator()}
+	 * @apiNote <b>Do not reuse</b> the returned {@link Iterable} in another loop. The stream is consumed by the iterable's
+	 *          first pass of elements.
 	 */
 	public static <T> Iterable<T> iterableStream(final Stream<T> stream)
 	{
@@ -63,6 +69,7 @@ public final class Util
 		final Class<T> entryClass,
 		final Map<String, Object> selectorTable)
 	{
+		final var registry = GameRegistry.findRegistry(entryClass);
 		final var streamBuilder = Stream.<Stream<T>>builder();
 
 		for (final var selector : selectorTable.entrySet())
@@ -76,7 +83,7 @@ public final class Util
 				for (final var mobName : ((List<String>) value))
 				{
 					final var rl = new ResourceLocation(modId + ':' + mobName);
-					final var entry = GameRegistry.findRegistry(entryClass).getValue(rl);
+					final var entry = registry.getValue(rl);
 
 					if (entry == null)
 					{
@@ -103,5 +110,25 @@ public final class Util
 					.stream()
 					.anyMatch(e -> e.entityClass.equals(entityClass)))
 			.toArray(Biome[]::new);
+	}
+
+	public static Stream<Class<? extends EntityLiving>> resolveEntityClasses(
+		final Map<String, Object> mobs)
+	{
+		if (mobs == null)
+			return Stream.empty();
+
+		return Util.resolveRegistryEntries(EntityEntry.class, mobs)
+			.map(Util::getEntityLivingClass)
+			.filter(Objects::nonNull) // this erases the <? extends EntityLiving>, we have to cast it back 🤷‍♂️
+			.map(c -> (Class<? extends EntityLiving>) c);
+	}
+
+	public static Stream<Biome> resolveBiomes(final Map<String, Object> biomes)
+	{
+		if (biomes == null)
+			return Stream.empty();
+
+		return Util.resolveRegistryEntries(Biome.class, biomes);
 	}
 }

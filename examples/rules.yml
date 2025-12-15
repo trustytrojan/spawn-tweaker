@@ -1,15 +1,32 @@
 # never let zombies join the world.
 - on: join
-  if: { mob: minecraft:zombie }
+  for: # or if:
+    mobs: { minecraft: [zombie] }
   then: deny
+  # NOTE: if you do not write an 'if' clause, the 'else' clause will do nothing!
 
 # for mobs from mods 'grimoireofgaia' and 'muchmorespiders' with at least 20 HP,
 # let vanilla decide the spawn at a 25% chance,
 # otherwise deny the spawn.
 - for:
-    mods: [grimoireofgaia, muchmorespiders]
+    mobs: { grimoireofgaia: '*', muchmorespiders: '*' }
     health: { at_least: 20 }
-  if: { random: 0.25 }
+  if:
+    random: 0.25
+  then: default
+  else: deny
+
+# this is the same as the last rule, except the 'health' check was moved to
+# the 'if' clause.
+# there IS a difference here:
+# if not all the 'for' checks pass, the whole rule is skipped and no action is taken.
+# so in the previous rule, mobs with less than 20 HP do NOT make it to the 'if' checks,
+# which would force a decision to be made, and instead go to the next rule instead.
+- for:
+    mobs: { grimoireofgaia: '*', muchmorespiders: '*' }
+  if:
+    random: 0.25
+    health: { at_least: 20 }
   then: default
   else: deny
 
@@ -35,6 +52,7 @@
 # for **all** mobs (because there is no 'for' clause),
 # if it has at least 30 HP,
 # allow the spawn at a 60% chance.
+# because 'else' is not specified, vanilla will handle the spawn otherwise.
 - if:
     health: { at_least: 30 }
     random: 0.6
