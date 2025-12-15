@@ -16,7 +16,7 @@ else: <allow | deny | default (default)> # 'default' is the default if 'else' is
 ```
 
 ### `on` Clause
-Specifies the type of event this rule should evaluate on. Currently allows `join` or `spawn` as arguments. `spawn` is the default. `join` will make the rule run in Forge's `EntityJoinWorldEvent` event listener, which happens *before* Forge's `CheckSpawn` event. This is because in Minecraft code an entity must *join* the world (as if it was a player) before the world decides where to *spawn* it.
+Specifies the type of event this rule should evaluate on. Currently allows `join` or `spawn` as arguments. `spawn` is the default. `join` will make the rule run in Forge's [`EntityJoinWorldEvent`](https://skmedix.github.io/ForgeJavaDocs/javadoc/forge/1.12.2-14.23.5.2859/net/minecraftforge/event/entity/EntityJoinWorldEvent.html) event listener, which happens *after* Forge's [`CheckSpawn`](https://skmedix.github.io/ForgeJavaDocs/javadoc/forge/1.12.2-14.23.5.2859/net/minecraftforge/event/entity/living/LivingSpawnEvent.CheckSpawn.html) event. This is because in [Minecraft natural spawning code](https://github.com/MinecraftForge/MinecraftForge/blob/3effde4f1fc9d14d6ed1dbf6bebc39c2b18780e1/patches/minecraft/net/minecraft/world/WorldEntitySpawner.java.patch#L36-L46), an entity is checked whether it can spawn before it actually spawns. So specifying `on: join` is the last line of defense in case your `on: spawn` rule isn't behaving as expected.
 
 ### `for` Clause
 The set of conditions to match the event on for either:
