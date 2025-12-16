@@ -80,6 +80,7 @@ public class CompiledRule<E extends EntityEvent>
 
 		if (count.per.equalsIgnoreCase("chunk"))
 		{
+			// change this to actual vanilla per-chunk counting: N * loaded_chunks / 289
 			final var entityLists = ctx.getChunk().getEntityLists();
 			for (var i = 0; i < entityLists.length; ++i)
 			{

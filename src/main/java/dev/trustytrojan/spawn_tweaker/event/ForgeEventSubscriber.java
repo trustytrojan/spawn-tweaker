@@ -6,26 +6,12 @@ import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-public class ForgeEventSubscriber
+/**
+ * @implNote {@link CheckSpawn} happens before {@link EntityJoinWorldEvent}.
+ * @see net.minecraft.world.WorldEntitySpawner#findChunksForSpawning
+ */
+public final class ForgeEventSubscriber
 {
-    @SubscribeEvent
-    public void onJoinWorld(final EntityJoinWorldEvent event)
-    {
-        final var context = new JoinWorldWrapper(event);
-        final var rules = SpawnRules.joinRules;
-
-        for (int i = 0, n = rules.size(); i < n; ++i)
-        {
-            final var result = rules.get(i).evaluate(context);
-
-            if (result == Result.DENY)
-            {
-                event.setCanceled(true);
-                return;
-            }
-        }
-    }
-
     @SubscribeEvent
     public void onCheckSpawn(final CheckSpawn event)
     {
@@ -39,6 +25,24 @@ public class ForgeEventSubscriber
             if (result != null)
             {
                 event.setResult(result);
+                return;
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public void onJoinWorld(final EntityJoinWorldEvent event)
+    {
+        final var context = new JoinWorldWrapper(event);
+        final var rules = SpawnRules.joinRules;
+
+        for (int i = 0, n = rules.size(); i < n; ++i)
+        {
+            final var result = rules.get(i).evaluate(context);
+
+            if (result == Result.DENY)
+            {
+                event.setCanceled(true);
                 return;
             }
         }
