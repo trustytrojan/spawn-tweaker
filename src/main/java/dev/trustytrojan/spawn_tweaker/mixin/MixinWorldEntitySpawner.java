@@ -4,7 +4,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Unique;
 
-import dev.trustytrojan.spawn_tweaker.spawn.NaturalSpawnAlgorithm;
+import dev.trustytrojan.spawn_tweaker.spawn.VanillaNaturalSpawnAlgorithm;
 import net.minecraft.world.WorldEntitySpawner;
 import net.minecraft.world.WorldServer;
 
@@ -12,7 +12,7 @@ import net.minecraft.world.WorldServer;
 final class MixinWorldEntitySpawner
 {
 	@Unique
-	private final NaturalSpawnAlgorithm naturalSpawnAlgorithm = new NaturalSpawnAlgorithm();
+	private final VanillaNaturalSpawnAlgorithm naturalSpawnAlgorithm = new VanillaNaturalSpawnAlgorithm();
 
 	@Overwrite
 	public int findChunksForSpawning(
