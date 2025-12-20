@@ -8,17 +8,15 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import dev.trustytrojan.spawn_tweaker.data.SpawnRuleRaw;
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
-import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
+import dev.trustytrojan.spawn_tweaker.data.SpawnRule;
 
 public class SpawnRules
 {
 	private static final Logger logger = LogManager.getLogger();
 	private static File file;
 
-	public static final List<CompiledRule<CheckSpawn>> spawnRules = new ArrayList<>();
-	public static final List<CompiledRule<EntityJoinWorldEvent>> joinRules = new ArrayList<>();
+	public static final List<SpawnRule> spawnRules = new ArrayList<>();
+	public static final List<SpawnRule> joinRules = new ArrayList<>();
 
 	public static void init(final File configDir)
 	{
@@ -31,12 +29,13 @@ public class SpawnRules
 		joinRules.clear();
 		try
 		{
-			for (final var rawRule : YamlLoader.loadListFromYaml(file, SpawnRuleRaw.class))
+			for (final var rule : YamlLoader.loadListFromYaml(file, SpawnRule.class))
 			{
-				if (rawRule.on == null || rawRule.on.equals("spawn"))
-					spawnRules.add(new CompiledRule<>(rawRule));
-				else if (rawRule.on.equals("join"))
-					joinRules.add(new CompiledRule<>(rawRule));
+				rule.compile();
+				if (rule.on == null || rule.on.equals("spawn"))
+					spawnRules.add(rule);
+				else if (rule.on.equals("join"))
+					joinRules.add(rule);
 			}
 			logger.info("Rules loaded!");
 		}

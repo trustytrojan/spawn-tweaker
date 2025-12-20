@@ -1,7 +1,7 @@
 package dev.trustytrojan.spawn_tweaker.event;
 
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 
@@ -13,9 +13,9 @@ public class JoinWorldWrapper extends EntityEventWrapper<EntityJoinWorldEvent>
 	}
 
 	@Override
-	public World getWorld()
+	public WorldServer getWorld()
 	{
-		return event.getWorld();
+		return (WorldServer) event.getWorld();
 	}
 
 	@Override

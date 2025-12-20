@@ -27,8 +27,8 @@ public final class Util
 	 * @param stream The stream to consume
 	 * @return An {@link Iterable} using the provided stream's iterator.
 	 * @see {@link Stream#iterator()}
-	 * @apiNote <b>Do not reuse</b> the returned {@link Iterable} in another loop. The stream is consumed by the iterable's
-	 *          first pass of elements.
+	 * @apiNote <b>Do not reuse</b> the returned {@link Iterable} in another loop. The stream is
+	 *          consumed by the iterable's first pass of elements.
 	 */
 	public static <T> Iterable<T> iterableStream(final Stream<T> stream)
 	{
@@ -120,7 +120,8 @@ public final class Util
 
 		return Util.resolveRegistryEntries(EntityEntry.class, mobs)
 			.map(Util::getEntityLivingClass)
-			.filter(Objects::nonNull) // this erases the <? extends EntityLiving>, we have to cast it back 🤷‍♂️
+			.filter(Objects::nonNull) // this erases the <? extends EntityLiving>, we have to cast
+										// it back 🤷‍♂️
 			.map(c -> (Class<? extends EntityLiving>) c);
 	}
 
@@ -130,5 +131,16 @@ public final class Util
 			return Stream.empty();
 
 		return Util.resolveRegistryEntries(Biome.class, biomes);
+	}
+
+	public static boolean mutuallyExclusive(boolean... bools)
+	{
+		var trues = 0;
+		for (final var b : bools)
+		{
+			if (b && ++trues > 1)
+				break;
+		}
+		return trues <= 1;
 	}
 }

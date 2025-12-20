@@ -7,14 +7,11 @@ import java.util.Set;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLiving.SpawnPlacementType;
 import net.minecraft.entity.EntitySpawnPlacementRegistry;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.IEntityLivingData;
@@ -29,7 +26,7 @@ import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 @Mixin(WorldEntitySpawner.class)
-abstract class MixinWorldEntitySpawner
+final class MixinWorldEntitySpawner
 {
 	@Shadow
 	@Final
@@ -45,18 +42,11 @@ abstract class MixinWorldEntitySpawner
 	@Shadow
 	private static BlockPos getRandomChunkPosition(final World worldIn, final int x, final int z)
 	{
-		throw new AssertionError();
+		throw new AssertionError("Mixin shadow");
 	}
 
-	@Shadow
-	public static boolean canCreatureTypeSpawnAtLocation(
-		final SpawnPlacementType spawnPlacementTypeIn,
-		final World worldIn,
-		final BlockPos pos)
-	{
-		throw new AssertionError();
-	}
-
+	/* CODE FOR BENCHMARKING AGAINST VANILLA */
+	/* @formatter:off
 	static class ExecutionTimer
 	{
 		String name;
@@ -121,34 +111,26 @@ abstract class MixinWorldEntitySpawner
 			return;
 		original.end();
 	}
+	@formatter:on */
 
-	// /**
-	// * @author trustytrojan
-	// * @reason Delegate to myAlgorithm for simplified one-per-tick spawning
-	// */
-	// @Overwrite
-	// public int findChunksForSpawning(
-	// final WorldServer ws,
-	// final boolean spawnHostileMobs,
-	// final boolean spawnPeacefulMobs,
-	// final boolean spawnOnSetTickRate)
-	// {
-	// if (ws.playerEntities.isEmpty())
-	// return 0;
-	// myAlgorithm.start();
-	// myAlgorithm(ws, spawnHostileMobs, spawnPeacefulMobs, spawnOnSetTickRate);
-	// myAlgorithm.end();
-	// return 0;
-	// }
+	/**
+	 * @author trustytrojan
+	 * @reason Delegate to my spawn algorithm
+	 * @return Zero, since {@link WorldServer#tick} doesn't do anything with the return value
+	 */
+	@Overwrite
+	public int findChunksForSpawning(
+		final WorldServer ws,
+		final boolean spawnHostileMobs,
+		final boolean spawnPeacefulMobs,
+		final boolean spawnOnSetTickRate)
+	{
+		myAlgorithm(ws, spawnHostileMobs, spawnPeacefulMobs, spawnOnSetTickRate);
+		return 0;
+	}
 
 	private static final MutableBlockPos mutablePos = new MutableBlockPos();
 
-	/**
-	 * My algorithm's philosophy: at 20 tps, spawning one pack per tick is completely sufficient to
-	 * mimic natural spawning. Pick one random player, one random creature type, one chunk, and
-	 * spawn one pack. This is dramatically simpler than vanilla's exhaustive per-player, per-chunk,
-	 * per-type loops.
-	 */
 	@SuppressWarnings("deprecation")
 	public void myAlgorithm(
 		final WorldServer ws,
@@ -156,9 +138,15 @@ abstract class MixinWorldEntitySpawner
 		final boolean spawnPeacefulMobs,
 		final boolean spawnOnSetTickRate)
 	{
+		if (ws.playerEntities.isEmpty())
+			return;
+
 		final var rand = ws.rand;
 
-		// Gather eligible chunks
+		// Gather eligible chunks.
+		// Same idea as vanilla, but save time by looking at a "hollow-square" radius around each
+		// player. This lets us safely skip "too-close-to-player" and "too-close-to-spawn" checks in
+		// the entity spawning loop.
 		eligibleChunksForSpawning.clear();
 		for (final var player : ws.playerEntities)
 		{
@@ -169,7 +157,6 @@ abstract class MixinWorldEntitySpawner
 			final var pz = MathHelper.floor(player.posZ / 16);
 
 			// @formatter:off
-			// TODO: make hollow-square radius configurable
 			for (var dx = 3; dx <= 8; ++dx)
 			for (var dz = 3; dz <= 8; ++dz)
 			for (var sx = -1; sx <= 1; sx += 2)
@@ -191,6 +178,7 @@ abstract class MixinWorldEntitySpawner
 		shuffledEligibleChunks.clear();
 		shuffledEligibleChunks.addAll(eligibleChunksForSpawning);
 
+		// Creature type loop
 		nextCreatureType:
 		for (final var creatureType : EnumCreatureType.values())
 		{
@@ -208,6 +196,8 @@ abstract class MixinWorldEntitySpawner
 
 			Collections.shuffle(shuffledEligibleChunks);
 
+			// Chunk loop
+			nextChunk:
 			for (final var chunk : shuffledEligibleChunks)
 			{
 				// Pick a random block in our chunk
@@ -216,16 +206,27 @@ abstract class MixinWorldEntitySpawner
 					continue;
 				var spawnedThisChunk = 0;
 
+				// Pack attempt loop (more like: spawn entry picking loop)
 				for (int p = 0; p < 3; ++p)
 				{
-					// Forge PotentialSpawns event
+					// Fire a Forge PotentialSpawns event.
+					// Get a spawn entry *before* entering the entity spawning loop.
+					// Vanilla for some reason delays this until after finding a suitable block
+					// in the entity spawning loop, and breaks it if the entry is null.
+					// What we do here is logically equivalent with less code.
 					final var spawnEntry = ws.getSpawnListEntryForTypeAt(creatureType, startPos);
 					if (spawnEntry == null)
 						continue;
 					final var placement =
 						EntitySpawnPlacementRegistry.getPlacementForEntity(spawnEntry.entityClass);
 
-					// TODO: Consider making this configurable: either respect biome ranges OR Forge
+					// canCreatureTypeSpawnAtLocation() wastes 2 whole calls doing nothing.
+					// canCreatureTypeSpawnBody() directly contains the desired logic.
+					if (!WorldEntitySpawner.canCreatureTypeSpawnBody(placement, ws, startPos))
+						continue;
+
+					// Use the spawn entry's group sizes. Newer minecraft versions do this;
+					// 1.12.2 just picks a random integer in [1, 4].
 					final var packSize =
 						MathHelper.getInt(rand, spawnEntry.minGroupCount, spawnEntry.maxGroupCount);
 
@@ -235,17 +236,24 @@ abstract class MixinWorldEntitySpawner
 					var z = startPos.getZ();
 					IEntityLivingData livingData = null;
 
-					for (var i = 0; i < packSize; ++i)
+					// Entity spawning loop
+					for (var s = 0; s < packSize; ++s)
 					{
 						// Have each entity's position in the pack branch off from the start
 						x += rand.nextInt(6) - rand.nextInt(6);
+						// newer minecraft versions don't vary Y... maybe we should mimic that
 						y += rand.nextInt(1) - rand.nextInt(1);
 						z += rand.nextInt(6) - rand.nextInt(6);
 						mutablePos.setPos(x, y, z);
 
-						// Make sure it doesn't rain zombies one day
-						if (!canCreatureTypeSpawnAtLocation(placement, ws, mutablePos))
-							continue;
+						// Removed the redundant ws.canCreatureTypeSpawnHere() call.
+						// It just checks if the passed in spawn entry is in the biome's list,
+						// which we know is true, since we got it from the same list...
+						// This saves a whole PotentialSpawns event from running.
+
+						// Moved the canCreatureTypeSpawnAtLocation() call next to spawnEntry.
+						// If startPos isn't valid, why waste time randomly searching for a valid
+						// block when it's likely the whole chunk is invalid?
 
 						final EntityLiving entity;
 						try
@@ -292,6 +300,13 @@ abstract class MixinWorldEntitySpawner
 						// EntityJoinWorldEvent, where our join rules run.
 						ws.spawnEntity(entity);
 						++spawnedThisChunk;
+
+						// "Max spawn pack size" actually means "Limit per chunk".
+						// Vanilla skips to the next chunk if just *one* entity type reaches its
+						// chunk limit. Meaning there can be 3 different kinds of mobs in the same
+						// chunk. We will keep this behavior.
+						if (spawnedThisChunk >= ForgeEventFactory.getMaxSpawnPackSize(entity))
+							continue nextChunk;
 
 						// Respect the creature type cap at all times!
 						if (creatureTypeEntityCount + spawnedThisChunk > maxCreatureTypeAllowed)

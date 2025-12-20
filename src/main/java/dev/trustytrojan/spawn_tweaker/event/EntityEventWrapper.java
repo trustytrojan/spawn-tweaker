@@ -1,9 +1,9 @@
 package dev.trustytrojan.spawn_tweaker.event;
 
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
@@ -23,14 +23,14 @@ public abstract class EntityEventWrapper<E extends EntityEvent>
 		event.setResult(result);
 	}
 
-	public abstract World getWorld();
+	public abstract WorldServer getWorld();
 	public abstract Chunk getChunk();
 	public abstract BlockPos getPosition();
 	public abstract int getHeight();
 
-	public EntityLivingBase getEntity()
+	public EntityLiving getEntity()
 	{
-		return (EntityLivingBase) event.getEntity();
+		return (EntityLiving) event.getEntity();
 	}
 
 	public ResourceLocation getEntityRl()

@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import dev.trustytrojan.spawn_tweaker.data.SpawnEntryRaw;
+import dev.trustytrojan.spawn_tweaker.data.SpawnEntry;
 
 public class SpawnEntries
 {
@@ -23,7 +23,7 @@ public class SpawnEntries
 	{
 		try
 		{
-			apply(YamlLoader.loadListFromYaml(file, SpawnEntryRaw.class));
+			apply(YamlLoader.loadListFromYaml(file, SpawnEntry.class));
 		}
 		catch (final IOException t)
 		{
@@ -32,7 +32,7 @@ public class SpawnEntries
 		}
 	}
 
-	public static void apply(final List<SpawnEntryRaw> entries)
+	public static void apply(final List<SpawnEntry> entries)
 	{
 		var i = 1;
 		for (final var entry : entries)

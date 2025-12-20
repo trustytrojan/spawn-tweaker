@@ -1,7 +1,7 @@
 package dev.trustytrojan.spawn_tweaker.event;
 
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
 
@@ -13,9 +13,9 @@ public class CheckSpawnWrapper extends EntityEventWrapper<CheckSpawn>
 	}
 
 	@Override
-	public World getWorld()
+	public WorldServer getWorld()
 	{
-		return event.getWorld();
+		return (WorldServer) event.getWorld();
 	}
 
 	@Override

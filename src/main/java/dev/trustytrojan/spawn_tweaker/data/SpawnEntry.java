@@ -12,7 +12,7 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 
-public class SpawnEntryRaw
+public class SpawnEntry
 {
 	private static final Logger logger = LogManager.getLogger();
 
@@ -67,7 +67,7 @@ public class SpawnEntryRaw
 	{
 		final var currentBiomes = Util.getCurrentSpawnBiomes(clazz);
 
-		if (remove.equals("existing") && currentBiomes.length > 0)
+		if ("existing".equals(remove) && currentBiomes.length > 0)
 		{
 			EntityRegistry.removeSpawn(clazz, EnumCreatureType.MONSTER, currentBiomes);
 			logger.info(
@@ -85,7 +85,7 @@ public class SpawnEntryRaw
 			return;
 		}
 
-		if (remove.equals("specified"))
+		if ("specified".equals(remove))
 		{
 			EntityRegistry.removeSpawn(clazz, EnumCreatureType.MONSTER, targetBiomes);
 			logger.info(
@@ -103,6 +103,5 @@ public class SpawnEntryRaw
 			group_size.get(1),
 			EnumCreatureType.MONSTER,
 			targetBiomes);
-		logger.info("Entry #{}: Added/updated {} biomes for {}", index, targetBiomes.length, clazz);
 	}
 }

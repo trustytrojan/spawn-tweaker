@@ -1,9 +1,12 @@
 package dev.trustytrojan.spawn_tweaker.event;
 
+import dev.trustytrojan.spawn_tweaker.EntityCounter;
 import dev.trustytrojan.spawn_tweaker.SpawnRules;
+import net.minecraft.entity.EntityLiving;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 /**
@@ -12,7 +15,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  */
 public final class ForgeEventSubscriber
 {
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onCheckSpawn(final CheckSpawn event)
     {
         final var context = new CheckSpawnWrapper(event);
@@ -30,7 +33,15 @@ public final class ForgeEventSubscriber
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onJoinWorldFirst(final EntityJoinWorldEvent event)
+    {
+        EntityCounter.init(event.getWorld());
+        if (event.getEntity() instanceof final EntityLiving el)
+            EntityCounter.registerSpawn(event.getWorld(), el.getClass());
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onJoinWorld(final EntityJoinWorldEvent event)
     {
         final var context = new JoinWorldWrapper(event);
