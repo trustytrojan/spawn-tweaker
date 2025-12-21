@@ -1,5 +1,6 @@
 package dev.trustytrojan.spawn_tweaker.event;
 
+import dev.trustytrojan.spawn_tweaker.EntityCounter;
 import dev.trustytrojan.spawn_tweaker.SpawnRules;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
@@ -29,6 +30,14 @@ public final class ForgeEventSubscriber
                 return;
             }
         }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public void onJoinWorldFirst(final EntityJoinWorldEvent event)
+    {
+        // Just add an EntityCountWorldEventListener to the world.
+        // The listener will do the counting work for us.
+        EntityCounter.init(event.getWorld());
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)

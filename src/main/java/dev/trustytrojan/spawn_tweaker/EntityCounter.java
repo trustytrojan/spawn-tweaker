@@ -17,7 +17,9 @@ public final class EntityCounter
 
 	public static void init(final World world)
 	{
-		WORLD_TO_ENTITY_COUNT.putIfAbsent(world, new HashMap<>());
+		if (WORLD_TO_ENTITY_COUNT.containsKey(world))
+			return;
+		WORLD_TO_ENTITY_COUNT.put(world, new HashMap<>());
 		world.addEventListener(new EntityCounterWorldEventListener());
 	}
 
@@ -25,9 +27,8 @@ public final class EntityCounter
 		final World world,
 		final Class<? extends EntityLiving> entityClass)
 	{
-		final var entityCountMap = WORLD_TO_ENTITY_COUNT.get(world);
-		if (entityCountMap == null)
-			return;
+		final var entityCountMap =
+			WORLD_TO_ENTITY_COUNT.computeIfAbsent(world, w -> new HashMap<>());
 		final var newCount = entityCountMap.getOrDefault(entityClass, 0) + 1;
 		entityCountMap.put(entityClass, newCount);
 	}
@@ -36,9 +37,8 @@ public final class EntityCounter
 		final World world,
 		final Class<? extends EntityLiving> entityClass)
 	{
-		final var entityCountMap = WORLD_TO_ENTITY_COUNT.get(world);
-		if (entityCountMap == null)
-			return;
+		final var entityCountMap =
+			WORLD_TO_ENTITY_COUNT.computeIfAbsent(world, w -> new HashMap<>());
 		final var newCount = Math.max(0, entityCountMap.getOrDefault(entityClass, 0) - 1);
 		entityCountMap.put(entityClass, newCount);
 	}

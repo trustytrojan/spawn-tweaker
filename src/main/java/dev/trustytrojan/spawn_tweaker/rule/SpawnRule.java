@@ -91,9 +91,7 @@ public class SpawnRule
 		}
 
 		if (c.count != null)
-		{
 			checks.add(ctx -> checkCount(c.count, ctx));
-		}
 	}
 
 	private boolean checkCount(final Count count, final EntityEventWrapper<?> ctx)
