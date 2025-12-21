@@ -33,7 +33,7 @@ public final class CommandSpawnTweaker extends CommandBase
 	@Override
 	public String getUsage(final ICommandSender sender)
 	{
-		return "Subcommands:\n- reload <rules|entries>\n- restore_original_spawns\n- killall\n- algo [<name> [<value>]]";
+		return "Subcommands:\n- reload <rules|entries>\n- killall\n- algorithm [<name> [<value>]]";
 	}
 
 	@Override
@@ -78,9 +78,9 @@ public final class CommandSpawnTweaker extends CommandBase
 			}
 		}
 
-		case "algo" ->
+		case "algorithm" ->
 		{
-			final int extra = args.length - 1; // number of args after 'algo'
+			final int extra = args.length - 1; // number of args after 'algorithm'
 			if (extra == 0)
 			{
 				reply.accept(
@@ -131,7 +131,7 @@ public final class CommandSpawnTweaker extends CommandBase
 						final String[] parts = args[2].split(",", -1);
 						if (parts.length != 2)
 							throw new CommandException(
-								"Usage: /spawntweaker algo spawnRadiusRange <min> <max> or <min,max>");
+								"Usage: /spawntweaker algorithm spawnRadiusRange <min> <max> or <min,max>");
 						min = parseInt(parts[0].trim());
 						max = parseInt(parts[1].trim());
 					}
@@ -157,7 +157,7 @@ public final class CommandSpawnTweaker extends CommandBase
 				return;
 			}
 
-			reply.accept("Usage: /spawntweaker algo [<name> [<value>]]");
+			reply.accept("Usage: /spawntweaker algorithm [<name> [<value>]]");
 		}
 
 		case "killall" ->
@@ -197,7 +197,7 @@ public final class CommandSpawnTweaker extends CommandBase
 				"reload",
 				"restore_original_spawns",
 				"killall",
-				"algo");
+				"algorithm");
 		}
 
 		if (args.length == 2)
@@ -206,7 +206,7 @@ public final class CommandSpawnTweaker extends CommandBase
 			{
 			case "reload":
 				return getListOfStringsMatchingLastWord(args, "rules", "entries");
-			case "algo":
+			case "algorithm":
 				return getListOfStringsMatchingLastWord(
 					args,
 					"packAttempts",
@@ -218,7 +218,7 @@ public final class CommandSpawnTweaker extends CommandBase
 			}
 		}
 
-		if (args.length == 3 && "algo".equalsIgnoreCase(args[0]))
+		if (args.length == 3 && "algorithm".equalsIgnoreCase(args[0]))
 		{
 			if ("varyY".equalsIgnoreCase(args[1]))
 				return getListOfStringsMatchingLastWord(args, "true", "false");
