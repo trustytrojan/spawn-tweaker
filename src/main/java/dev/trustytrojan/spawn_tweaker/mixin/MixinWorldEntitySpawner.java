@@ -49,14 +49,16 @@ final class MixinWorldEntitySpawner
 	/* @formatter:off
 	static class ExecutionTimer
 	{
-		String name;
+		final String name;
+		final long[] history = new long[100];
+		int index = 0;
+		int count = 0;
+		long start;
 
 		ExecutionTimer(String name)
 		{
 			this.name = name;
 		}
-
-		long sum, totalRuns, start;
 
 		void start()
 		{
@@ -66,16 +68,20 @@ final class MixinWorldEntitySpawner
 		void end()
 		{
 			final var elapsed = System.nanoTime() - start;
-			sum += elapsed;
-			++totalRuns;
-			final var avg = sum / totalRuns;
-			System.out.printf("%s: curr=%dus avg=%dus\n", name, elapsed / 1_000, avg / 1_000);
+			history[index] = elapsed;
+			index = (index + 1) % history.length;
+			if (count < history.length) count++;
+
+			var sum = 0L;
+			for (int i = 0; i < count; i++) sum += history[i];
+			final var avg = (double) sum / count;
+			System.out.printf("%s: curr=%.3f avg=%.3f\n", name, elapsed / 1_000_000f, avg / 1_000_000f);
 		}
 	}
 
 	private static final ExecutionTimer myAlgorithm = new ExecutionTimer("myAlgorithm"),
 		original = new ExecutionTimer("original");
-
+	
 	@Inject(
 		method = "findChunksForSpawning(Lnet/minecraft/world/WorldServer;ZZZ)I",
 		at = @At("HEAD"),
@@ -107,8 +113,6 @@ final class MixinWorldEntitySpawner
 		boolean spawnOnSetTickRate,
 		CallbackInfoReturnable<Integer> cir)
 	{
-		if (ws.playerEntities.isEmpty())
-			return;
 		original.end();
 	}
 	@formatter:on */
@@ -125,7 +129,9 @@ final class MixinWorldEntitySpawner
 		final boolean spawnPeacefulMobs,
 		final boolean spawnOnSetTickRate)
 	{
+		// myAlgorithm.start();
 		myAlgorithm(ws, spawnHostileMobs, spawnPeacefulMobs, spawnOnSetTickRate);
+		// myAlgorithm.end();
 		return 0;
 	}
 
@@ -220,11 +226,6 @@ final class MixinWorldEntitySpawner
 					final var placement =
 						EntitySpawnPlacementRegistry.getPlacementForEntity(spawnEntry.entityClass);
 
-					// canCreatureTypeSpawnAtLocation() wastes 2 whole calls doing nothing.
-					// canCreatureTypeSpawnBody() directly contains the desired logic.
-					if (!WorldEntitySpawner.canCreatureTypeSpawnBody(placement, ws, startPos))
-						continue;
-
 					// Use the spawn entry's group sizes. Newer minecraft versions do this;
 					// 1.12.2 just picks a random integer in [1, 4].
 					final var packSize =
@@ -251,9 +252,8 @@ final class MixinWorldEntitySpawner
 						// which we know is true, since we got it from the same list...
 						// This saves a whole PotentialSpawns event from running.
 
-						// Moved the canCreatureTypeSpawnAtLocation() call next to spawnEntry.
-						// If startPos isn't valid, why waste time randomly searching for a valid
-						// block when it's likely the whole chunk is invalid?
+						if (!WorldEntitySpawner.canCreatureTypeSpawnBody(placement, ws, mutablePos))
+							continue;
 
 						final EntityLiving entity;
 						try
