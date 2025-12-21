@@ -1,0 +1,36 @@
+# FALSE "MOD CAP" EXAMPLES
+# SRP is used for the examples but this applies to all mods.
+
+# This rule will NOT cap all srparasites mobs to 5.
+# The selector selects any SRP mob trying to spawn.
+# The count condition counts for 5 of the SELECTED mob.
+# For example: srparasites:buglin gets selected; if there are 5 srparasites:buglin mobs, deny; otherwise, allow.
+# The same applies for any srparasites mob: srparasites:worker gets selected; if there are 5 srparasites:worker mobs, deny; otherwise, allow.
+- for: { mobs: { srparasites: '*' } }
+  if: { count: { at_least: 5 } }
+  then: deny
+
+# This rule is equivalent to the above rule.
+- for:
+    mobs: { srparasites: '*' }
+    count: { at_least: 5 }
+  then: deny
+
+# This rule is equivalent to the above two rules.
+- if:
+    mobs: { srparasites: '*' }
+    count: { at_least: 5 }
+  then: deny
+
+# If you don't understand why the above three rules are equivalent, read docs/rules.md again.
+
+# This rule WILL cap all srparasites mobs to 5.
+# Why? Because we specified to the count condition EXACTLY what to count.
+# In this case, it is counting ALL srparasites mobs.
+# The above examples don't do this; they let the count condition only count the mob that made it to the count condition.
+- for: { mobs: { srparasites: '*' } }
+  if:
+    count:
+      at_least: 5
+      mobs: { srparasites: '*' }
+  then: deny

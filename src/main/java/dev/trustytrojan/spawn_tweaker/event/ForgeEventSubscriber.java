@@ -22,7 +22,7 @@ public final class ForgeEventSubscriber
 
         for (int i = 0, n = rules.size(); i < n; ++i)
         {
-            final var result = rules.get(i).evaluate(context);
+            final var result = rules.get(i).evaluate(i, context);
 
             if (result != null)
             {
@@ -48,7 +48,7 @@ public final class ForgeEventSubscriber
 
         for (int i = 0, n = rules.size(); i < n; ++i)
         {
-            final var result = rules.get(i).evaluate(context);
+            final var result = rules.get(i).evaluate(i, context);
 
             if (result == Result.DENY)
             {

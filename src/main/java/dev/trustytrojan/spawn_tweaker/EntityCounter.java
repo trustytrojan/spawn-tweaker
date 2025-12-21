@@ -50,4 +50,22 @@ public final class EntityCounter
 			return 0;
 		return entityCountMap.getOrDefault(entityClass, 0);
 	}
+
+	public static int getCount(
+		final World world,
+		final Iterable<Class<? extends EntityLiving>> entityClasses)
+	{
+		final var entityCountMap = WORLD_TO_ENTITY_COUNT.get(world);
+		if (entityCountMap == null)
+			return 0;
+
+		var sum = 0;
+		for (final var entityClass : entityClasses)
+		{
+			if (entityClass == null)
+				continue;
+			sum += entityCountMap.getOrDefault(entityClass, 0);
+		}
+		return sum;
+	}
 }
