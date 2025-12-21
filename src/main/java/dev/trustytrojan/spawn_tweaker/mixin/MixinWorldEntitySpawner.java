@@ -188,7 +188,6 @@ final class MixinWorldEntitySpawner
 		shuffledEligibleChunks.addAll(eligibleChunksForSpawning);
 
 		// Creature type loop
-		nextCreatureType:
 		for (final var creatureType : EnumCreatureType.values())
 		{
 			if (creatureType.getPeacefulCreature() && !spawnPeacefulMobs)
@@ -312,10 +311,6 @@ final class MixinWorldEntitySpawner
 						// chunk. We will keep this behavior.
 						if (spawnedThisChunk >= ForgeEventFactory.getMaxSpawnPackSize(entity))
 							continue nextChunk;
-
-						// Respect the creature type cap at all times!
-						if (creatureTypeEntityCount + spawnedThisChunk > maxCreatureTypeAllowed)
-							continue nextCreatureType;
 					}
 				}
 			}

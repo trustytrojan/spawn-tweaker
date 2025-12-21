@@ -1,6 +1,7 @@
 package dev.trustytrojan.spawn_tweaker;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -8,8 +9,8 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import net.minecraft.command.CommandBase;
-import net.minecraft.command.ICommandSender;
 import net.minecraft.command.CommandException;
+import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
@@ -214,7 +215,7 @@ public final class CommandSpawnTweaker extends CommandBase
 					"varyY",
 					"spawnRadiusRange");
 			default:
-				return java.util.Collections.emptyList();
+				return Collections.emptyList();
 			}
 		}
 
@@ -222,9 +223,9 @@ public final class CommandSpawnTweaker extends CommandBase
 		{
 			if ("varyY".equalsIgnoreCase(args[1]))
 				return getListOfStringsMatchingLastWord(args, "true", "false");
-			return java.util.Collections.emptyList();
+			return Collections.emptyList();
 		}
 
-		return java.util.Collections.emptyList();
+		return Collections.emptyList();
 	}
 }
