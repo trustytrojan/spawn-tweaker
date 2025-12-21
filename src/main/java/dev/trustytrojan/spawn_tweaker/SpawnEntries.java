@@ -9,8 +9,11 @@ import org.apache.logging.log4j.Logger;
 
 import dev.trustytrojan.spawn_tweaker.data.SpawnEntry;
 
-public class SpawnEntries
+public final class SpawnEntries
 {
+	private SpawnEntries()
+	{}
+
 	private static final Logger logger = LogManager.getLogger();
 	private static File file;
 
@@ -23,6 +26,14 @@ public class SpawnEntries
 	{
 		try
 		{
+			final var entries = YamlLoader.loadListFromYaml(file, SpawnEntry.class);
+
+			if (entries.isEmpty())
+			{
+				logger.warn("No entries loaded from file. Restoring original entries.");
+				OriginalEntries.restore();
+			}
+
 			apply(YamlLoader.loadListFromYaml(file, SpawnEntry.class));
 		}
 		catch (final IOException t)

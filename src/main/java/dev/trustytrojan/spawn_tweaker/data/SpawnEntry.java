@@ -27,8 +27,8 @@ public class SpawnEntry
 	public Integer weight;
 	public List<Integer> group_size;
 
-	private int index;
-	private Biome[] resolvedBiomes;
+	private transient int index;
+	private transient Biome[] resolvedBiomes;
 
 	// for logging purposes
 	public void setIndex(final int i)

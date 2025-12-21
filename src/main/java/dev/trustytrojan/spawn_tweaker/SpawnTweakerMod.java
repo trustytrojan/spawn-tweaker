@@ -17,8 +17,11 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 	// does not depend on clients, so accept any version
 	acceptableRemoteVersions = "*"
 )
-public class SpawnTweakerMod
+public final class SpawnTweakerMod
 {
+	private SpawnTweakerMod()
+	{}
+
 	@EventHandler
 	public void preInit(final FMLPreInitializationEvent event)
 	{

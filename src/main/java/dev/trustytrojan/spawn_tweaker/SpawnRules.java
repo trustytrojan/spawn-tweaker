@@ -10,8 +10,11 @@ import org.apache.logging.log4j.Logger;
 
 import dev.trustytrojan.spawn_tweaker.data.SpawnRule;
 
-public class SpawnRules
+public final class SpawnRules
 {
+	private SpawnRules()
+	{}
+
 	private static final Logger logger = LogManager.getLogger();
 	private static File file;
 

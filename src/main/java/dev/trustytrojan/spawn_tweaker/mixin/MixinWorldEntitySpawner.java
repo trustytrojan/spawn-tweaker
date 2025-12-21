@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
+import dev.trustytrojan.spawn_tweaker.SpawnAlgorithmConfig;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntitySpawnPlacementRegistry;
 import net.minecraft.entity.EnumCreatureType;
@@ -161,10 +162,12 @@ final class MixinWorldEntitySpawner
 
 			final var px = MathHelper.floor(player.posX / 16);
 			final var pz = MathHelper.floor(player.posZ / 16);
+			final var min = SpawnAlgorithmConfig.spawnRadiusRange[0];
+			final var max = SpawnAlgorithmConfig.spawnRadiusRange[1];
 
 			// @formatter:off
-			for (var dx = 3; dx <= 8; ++dx)
-			for (var dz = 3; dz <= 8; ++dz)
+			for (var dx = min; dx <= max; ++dx)
+			for (var dz = min; dz <= max; ++dz)
 			for (var sx = -1; sx <= 1; sx += 2)
 			for (var sz = -1; sz <= 1; sz += 2)
 			{
@@ -213,7 +216,7 @@ final class MixinWorldEntitySpawner
 				var spawnedThisChunk = 0;
 
 				// Pack attempt loop (more like: spawn entry picking loop)
-				for (int p = 0; p < 3; ++p)
+				for (int p = 0; p < SpawnAlgorithmConfig.packAttempts; ++p)
 				{
 					// Fire a Forge PotentialSpawns event.
 					// Get a spawn entry *before* entering the entity spawning loop.
@@ -240,11 +243,13 @@ final class MixinWorldEntitySpawner
 					// Entity spawning loop
 					for (var s = 0; s < packSize; ++s)
 					{
+						final var d = SpawnAlgorithmConfig.packEntityMaxDistance + 1;
 						// Have each entity's position in the pack branch off from the start
-						x += rand.nextInt(6) - rand.nextInt(6);
+						x += rand.nextInt(d) - rand.nextInt(d);
 						// newer minecraft versions don't vary Y... maybe we should mimic that
-						y += rand.nextInt(1) - rand.nextInt(1);
-						z += rand.nextInt(6) - rand.nextInt(6);
+						if (SpawnAlgorithmConfig.varyY)
+							y += rand.nextInt(1) - rand.nextInt(1);
+						z += rand.nextInt(d) - rand.nextInt(d);
 						mutablePos.setPos(x, y, z);
 
 						// Removed the redundant ws.canCreatureTypeSpawnHere() call.

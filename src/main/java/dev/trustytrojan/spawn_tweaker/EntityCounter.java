@@ -7,8 +7,11 @@ import dev.trustytrojan.spawn_tweaker.event.VanillaWorldEventListener;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.world.World;
 
-public class EntityCounter
+public final class EntityCounter
 {
+	private EntityCounter()
+	{}
+
 	private static final Map<World, Map<Class<? extends EntityLiving>, Integer>> WORLD_TO_ENTITY_COUNT =
 		new HashMap<>();
 

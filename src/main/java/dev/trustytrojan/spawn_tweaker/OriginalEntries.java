@@ -27,7 +27,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome.SpawnListEntry;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
-final class OriginalEntries
+public final class OriginalEntries
 {
 	private OriginalEntries()
 	{}
@@ -113,7 +113,8 @@ final class OriginalEntries
 
 		try (final var r = new FileReader(file))
 		{
-			m = gson.fromJson(r, new TypeToken<Map<String, List<SpawnListEntry>>>() {}.getType());
+			m = gson.fromJson(r, new TypeToken<Map<String, List<SpawnListEntry>>>()
+			{}.getType());
 		}
 		catch (final IOException e)
 		{

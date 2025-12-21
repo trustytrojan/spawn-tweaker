@@ -20,6 +20,9 @@ import net.minecraftforge.registries.IForgeRegistryEntry;
 
 public final class Util
 {
+	private Util()
+	{}
+
 	private static final Logger logger = LogManager.getLogger();
 
 	/**
@@ -32,7 +35,8 @@ public final class Util
 	 */
 	public static <T> Iterable<T> iterableStream(final Stream<T> stream)
 	{
-		return new Iterable<>() {
+		return new Iterable<>()
+		{
 			@Override
 			public Iterator<T> iterator()
 			{
