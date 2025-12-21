@@ -1,4 +1,4 @@
-package dev.trustytrojan.spawn_tweaker.data;
+package dev.trustytrojan.spawn_tweaker.rule;
 
 import java.util.function.Function;
 

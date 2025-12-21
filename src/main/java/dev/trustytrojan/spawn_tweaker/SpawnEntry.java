@@ -1,4 +1,4 @@
-package dev.trustytrojan.spawn_tweaker.data;
+package dev.trustytrojan.spawn_tweaker;
 
 import java.util.List;
 import java.util.Map;
@@ -6,7 +6,6 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import dev.trustytrojan.spawn_tweaker.Util;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.world.biome.Biome;

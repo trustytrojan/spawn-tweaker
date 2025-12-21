@@ -7,8 +7,6 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import dev.trustytrojan.spawn_tweaker.data.SpawnEntry;
-
 public final class SpawnEntries
 {
 	private SpawnEntries()

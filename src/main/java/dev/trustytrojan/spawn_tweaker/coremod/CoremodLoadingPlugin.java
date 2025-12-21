@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Early mixin loader coremod to register vanilla/Forge-targeting mixins.
- * Kept in its own package to avoid transformer exclusion overlapping mixin classes.
+ * Early mixin loader coremod to register vanilla/Forge-targeting mixins. Kept in its own package to
+ * avoid transformer exclusion overlapping mixin classes.
  */
-@IFMLLoadingPlugin.TransformerExclusions({"dev.trustytrojan.spawn_tweaker.coremod"})
+@IFMLLoadingPlugin.TransformerExclusions("dev.trustytrojan.spawn_tweaker.coremod")
 public class CoremodLoadingPlugin implements IFMLLoadingPlugin, IEarlyMixinLoader
 {
 	@Override
