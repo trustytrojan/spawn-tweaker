@@ -11,10 +11,17 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorldEventListener;
 import net.minecraft.world.World;
 
-public class VanillaWorldEventListener implements IWorldEventListener
+public class EntityCounterWorldEventListener implements IWorldEventListener
 {
 	@Override
-	public void onEntityRemoved(Entity e)
+	public void onEntityAdded(final Entity e)
+	{
+		if (e instanceof final EntityLiving el)
+			EntityCounter.registerSpawn(el.world, el.getClass());
+	}
+
+	@Override
+	public void onEntityRemoved(final Entity e)
 	{
 		if (e instanceof final EntityLiving el)
 			EntityCounter.registerDespawn(el.world, el.getClass());
@@ -78,10 +85,6 @@ public class VanillaWorldEventListener implements IWorldEventListener
 		double ySpeed,
 		double zSpeed,
 		int... parameters)
-	{}
-
-	@Override
-	public void onEntityAdded(Entity entityIn)
 	{}
 
 	@Override

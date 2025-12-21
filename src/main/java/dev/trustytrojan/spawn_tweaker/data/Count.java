@@ -21,7 +21,8 @@ public class Count extends Range
 
 		if ("chunk".equalsIgnoreCase(per))
 		{
-			scaler = ctx -> {
+			scaler = ctx ->
+			{
 				final var world = ctx.getWorld();
 				final var entitySpawner = ((WorldServerAccessor) world).getEntitySpawner();
 				final var eligibleChunks =

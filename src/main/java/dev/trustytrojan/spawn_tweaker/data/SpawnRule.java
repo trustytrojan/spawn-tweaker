@@ -30,8 +30,11 @@ public class SpawnRule
 	public String elseAction; // "allow", "deny", "default"
 
 	// Compiled data
-	private final transient List<Predicate<EntityEventWrapper<?>>> selectorChecks = new ArrayList<>();
-	private final transient List<Predicate<EntityEventWrapper<?>>> conditionChecks = new ArrayList<>();
+	// @formatter:off
+	private final transient List<Predicate<EntityEventWrapper<?>>>
+		selectorChecks = new ArrayList<>(),
+		conditionChecks = new ArrayList<>();
+	// @formatter:on
 	private transient Event.Result thenResult;
 	private transient Event.Result elseResult;
 

@@ -3,7 +3,7 @@ package dev.trustytrojan.spawn_tweaker;
 import java.util.HashMap;
 import java.util.Map;
 
-import dev.trustytrojan.spawn_tweaker.event.VanillaWorldEventListener;
+import dev.trustytrojan.spawn_tweaker.event.EntityCounterWorldEventListener;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.world.World;
 
@@ -17,10 +17,8 @@ public final class EntityCounter
 
 	public static void init(final World world)
 	{
-		if (WORLD_TO_ENTITY_COUNT.containsKey(world))
-			return;
-		WORLD_TO_ENTITY_COUNT.put(world, new HashMap<>());
-		world.addEventListener(new VanillaWorldEventListener());
+		WORLD_TO_ENTITY_COUNT.putIfAbsent(world, new HashMap<>());
+		world.addEventListener(new EntityCounterWorldEventListener());
 	}
 
 	public static void registerSpawn(
@@ -50,6 +48,6 @@ public final class EntityCounter
 		final var entityCountMap = WORLD_TO_ENTITY_COUNT.get(world);
 		if (entityCountMap == null)
 			return 0;
-		return entityCountMap.get(entityClass);
+		return entityCountMap.getOrDefault(entityClass, 0);
 	}
 }

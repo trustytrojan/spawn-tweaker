@@ -14,9 +14,11 @@ public class Conditions
 
 	public void compile()
 	{
+		// @formatter:off
 		if (health != null) health.compile();
 		if (light != null) light.compile();
 		if (height != null) height.compile();
 		if (count != null) count.compile();
+		// @formatter:on
 	}
 }

@@ -1,8 +1,6 @@
 package dev.trustytrojan.spawn_tweaker.event;
 
-import dev.trustytrojan.spawn_tweaker.EntityCounter;
 import dev.trustytrojan.spawn_tweaker.SpawnRules;
-import net.minecraft.entity.EntityLiving;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent.CheckSpawn;
 import net.minecraftforge.fml.common.eventhandler.Event.Result;
@@ -31,14 +29,6 @@ public final class ForgeEventSubscriber
                 return;
             }
         }
-    }
-
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onJoinWorldFirst(final EntityJoinWorldEvent event)
-    {
-        EntityCounter.init(event.getWorld());
-        if (event.getEntity() instanceof final EntityLiving el)
-            EntityCounter.registerSpawn(event.getWorld(), el.getClass());
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
