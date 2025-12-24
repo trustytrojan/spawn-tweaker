@@ -7,6 +7,10 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
+
 public final class SpawnEntries
 {
 	private SpawnEntries()
@@ -18,6 +22,7 @@ public final class SpawnEntries
 	public static void init(final File configDir)
 	{
 		file = new File(configDir, "entries.yml");
+		prevLastModified = file.lastModified();
 	}
 
 	public static void load()
@@ -57,5 +62,32 @@ public final class SpawnEntries
 			}
 		}
 		logger.info("Entries applied!");
+	}
+
+	private static int tickCounter;
+	private static long prevLastModified;
+
+	@SubscribeEvent
+	public static void onServerTick(final ServerTickEvent event)
+	{
+		if (event.phase != TickEvent.Phase.END)
+			return;
+		if (++tickCounter % 20 != 0)
+			return;
+
+		final var currentLastModified = file.lastModified();
+
+		if (currentLastModified == 0)
+		{
+			logger.warn("Config file {} does not exist or error occurred", file);
+			return;
+		}
+
+		if (prevLastModified < currentLastModified)
+		{
+			logger.warn("File {} changed, reloading config", file);
+			prevLastModified = currentLastModified;
+			load();
+		}
 	}
 }

@@ -34,6 +34,8 @@ public final class SpawnTweakerMod
 	public void postInit(final FMLPostInitializationEvent event)
 	{
 		MinecraftForge.EVENT_BUS.register(new ForgeEventSubscriber());
+		MinecraftForge.EVENT_BUS.register(SpawnRules.class);
+		MinecraftForge.EVENT_BUS.register(SpawnEntries.class);
 		SpawnRules.load();
 		OriginalEntries.save();
 		SpawnEntries.load();
