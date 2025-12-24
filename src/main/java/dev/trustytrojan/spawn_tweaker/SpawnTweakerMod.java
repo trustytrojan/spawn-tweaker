@@ -19,6 +19,9 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 )
 public final class SpawnTweakerMod
 {
+	public static SpawnEntries spawnEntries;
+	public static SpawnRules spawnRules;
+
 	@EventHandler
 	public void preInit(final FMLPreInitializationEvent event)
 	{
@@ -26,19 +29,19 @@ public final class SpawnTweakerMod
 		if (!configDir.exists())
 			configDir.mkdir();
 		OriginalEntries.init(configDir);
-		SpawnRules.init(configDir);
-		SpawnEntries.init(configDir);
+		spawnRules = new SpawnRules(configDir);
+		spawnEntries = new SpawnEntries(configDir);
 	}
 
 	@EventHandler
 	public void postInit(final FMLPostInitializationEvent event)
 	{
 		MinecraftForge.EVENT_BUS.register(new ForgeEventSubscriber());
-		MinecraftForge.EVENT_BUS.register(SpawnRules.class);
-		MinecraftForge.EVENT_BUS.register(SpawnEntries.class);
-		SpawnRules.load();
+		MinecraftForge.EVENT_BUS.register(spawnRules);
+		MinecraftForge.EVENT_BUS.register(spawnEntries);
+		spawnRules.load();
 		OriginalEntries.save();
-		SpawnEntries.load();
+		spawnEntries.load();
 	}
 
 	@EventHandler

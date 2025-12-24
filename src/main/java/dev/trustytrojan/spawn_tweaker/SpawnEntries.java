@@ -7,29 +7,21 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
-
-public final class SpawnEntries
+public final class SpawnEntries extends ConfigFile
 {
-	private SpawnEntries()
-	{}
-
 	private static final Logger logger = LogManager.getLogger();
-	private static File file;
 
-	public static void init(final File configDir)
+	public SpawnEntries(final File configDir)
 	{
-		file = new File(configDir, "entries.yml");
-		prevLastModified = file.lastModified();
+		super(configDir, "entries.yml");
 	}
 
-	public static void load()
+	@Override
+	public void load()
 	{
 		try
 		{
-			final var entries = YamlLoader.loadListFromYaml(file, SpawnEntry.class);
+			final var entries = YamlLoader.loadListFromYaml(this, SpawnEntry.class);
 
 			if (entries.isEmpty())
 			{
@@ -37,7 +29,7 @@ public final class SpawnEntries
 				OriginalEntries.restore();
 			}
 
-			apply(YamlLoader.loadListFromYaml(file, SpawnEntry.class));
+			apply(entries);
 		}
 		catch (final IOException t)
 		{
@@ -62,32 +54,5 @@ public final class SpawnEntries
 			}
 		}
 		logger.info("Entries applied!");
-	}
-
-	private static int tickCounter;
-	private static long prevLastModified;
-
-	@SubscribeEvent
-	public static void onServerTick(final ServerTickEvent event)
-	{
-		if (event.phase != TickEvent.Phase.END)
-			return;
-		if (++tickCounter % 20 != 0)
-			return;
-
-		final var currentLastModified = file.lastModified();
-
-		if (currentLastModified == 0)
-		{
-			logger.warn("Config file {} does not exist or error occurred", file);
-			return;
-		}
-
-		if (prevLastModified < currentLastModified)
-		{
-			logger.warn("File {} changed, reloading config", file);
-			prevLastModified = currentLastModified;
-			load();
-		}
 	}
 }

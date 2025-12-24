@@ -65,13 +65,13 @@ public final class CommandSpawnTweaker extends CommandBase
 			{
 			case "rules" ->
 			{
-				SpawnRules.load();
+				SpawnTweakerMod.spawnRules.load();
 				reply.accept("Rules loaded.");
 			}
 
 			case "entries" ->
 			{
-				SpawnEntries.load();
+				SpawnTweakerMod.spawnEntries.load();
 				reply.accept("Entries loaded and applied.");
 			}
 

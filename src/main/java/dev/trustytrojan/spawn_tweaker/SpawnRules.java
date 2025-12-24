@@ -9,34 +9,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import dev.trustytrojan.spawn_tweaker.rule.SpawnRule;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ServerTickEvent;
 
-public final class SpawnRules
+public final class SpawnRules extends ConfigFile
 {
-	private SpawnRules()
-	{}
-
 	private static final Logger logger = LogManager.getLogger();
-	private static File file;
 
-	public static final List<SpawnRule> spawnRules = new ArrayList<>();
-	public static final List<SpawnRule> joinRules = new ArrayList<>();
+	public static final List<SpawnRule> spawnRules = new ArrayList<>(),
+		joinRules = new ArrayList<>();
 
-	public static void init(final File configDir)
+	public SpawnRules(final File configDir)
 	{
-		file = new File(configDir, "rules.yml");
-		prevLastModified = file.lastModified();
+		super(configDir, "rules.yml");
 	}
 
-	public static void load()
+	@Override
+	public void load()
 	{
 		spawnRules.clear();
 		joinRules.clear();
 		try
 		{
-			for (final var rule : YamlLoader.loadListFromYaml(file, SpawnRule.class))
+			for (final var rule : YamlLoader.loadListFromYaml(this, SpawnRule.class))
 			{
 				rule.compile();
 				if (rule.on == null || rule.on.equals("spawn"))
@@ -49,33 +42,6 @@ public final class SpawnRules
 		catch (final IOException e)
 		{
 			logger.error("Error occurred loading rules: ", e);
-		}
-	}
-
-	private static int tickCounter;
-	private static long prevLastModified;
-
-	@SubscribeEvent
-	public static void onServerTick(final ServerTickEvent event)
-	{
-		if (event.phase != TickEvent.Phase.END)
-			return;
-		if (++tickCounter % 20 != 0)
-			return;
-
-		final var currentLastModified = file.lastModified();
-
-		if (currentLastModified == 0)
-		{
-			logger.warn("Config file {} does not exist or error occurred", file);
-			return;
-		}
-
-		if (prevLastModified < currentLastModified)
-		{
-			logger.warn("File {} changed, reloading config", file);
-			prevLastModified = currentLastModified;
-			load();
 		}
 	}
 }
