@@ -19,21 +19,24 @@ public final class SpawnEntries extends ConfigFile
 	@Override
 	public void load()
 	{
+		OriginalEntries.restore();
+		logger.info("Restored original entries. Now loading entries.yml");
+
 		try
 		{
 			final var entries = YamlLoader.loadListFromYaml(this, SpawnEntry.class);
 
 			if (entries.isEmpty())
 			{
-				logger.warn("No entries loaded from file. Restoring original entries.");
-				OriginalEntries.restore();
+				logger.warn("No entries loaded from file!");
+				return;
 			}
 
 			apply(entries);
 		}
 		catch (final IOException t)
 		{
-			logger.error("Error occurred loading entries: ", t);
+			logger.error("Error occurred loading entries: ", t.getMessage());
 			return;
 		}
 	}
